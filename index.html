@@ -4,8 +4,12 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Dapur Parto — Order Management</title>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#3D6B3A">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-192.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&family=Baloo+2:wght@600;700;800&display=swap" rel="stylesheet">
 <style>
   :root{
     --bg:#F4F5F3;
@@ -23,6 +27,12 @@
     --blue:#3A6B8A;
     --blue-soft:#E3EEF3;
     --radius:6px;
+    /* Dashboard (home screen) palette */
+    --tan:#C9A876;
+    --tan-deep:#B08F5C;
+    --cream:#FCEEDA;
+    --green-cta:#7C9A5C;
+    --brown-ink:#2E2416;
   }
   *{box-sizing:border-box;}
   body{
@@ -30,26 +40,33 @@
     font-family:'Inter',sans-serif;font-size:14px;
     min-height:100vh;
   }
-  .app{max-width:1100px;margin:0 auto;padding:24px 20px 80px;}
+  .app{max-width:1100px;margin:0 auto;padding:0 0 96px;}
 
   header{margin-bottom:20px;}
   header h1{font-size:22px;font-weight:700;margin:0 0 2px;}
   header p{margin:0;color:var(--ink-soft);font-size:13px;}
 
   nav.tabs{
-    display:flex;gap:4px;margin-bottom:22px;border-bottom:1px solid var(--border);
-    overflow-x:auto;
+    position:fixed;left:50%;bottom:0;transform:translateX(-50%);
+    width:100%;max-width:480px;
+    display:flex;gap:0;margin:0;border-top:1px solid var(--border);
+    background:#fff;box-shadow:0 -6px 20px rgba(46,36,22,0.08);
+    padding:7px 4px calc(7px + env(safe-area-inset-bottom));
+    z-index:80;
   }
   nav.tabs button{
-    background:none;border:none;padding:10px 16px;font-family:'Inter',sans-serif;
-    font-size:13.5px;font-weight:600;color:var(--ink-soft);cursor:pointer;
-    border-bottom:2px solid transparent;white-space:nowrap;
+    flex:1;background:none;border:none;font-family:'Inter',sans-serif;
+    display:flex;flex-direction:column;align-items:center;gap:2px;
+    padding:5px 2px;font-size:10.5px;font-weight:600;color:var(--ink-soft);cursor:pointer;
+    border-bottom:none;white-space:nowrap;
   }
-  nav.tabs button.active{color:var(--primary-dark);border-bottom-color:var(--primary);}
+  nav.tabs button .nav-icon{font-size:19px;line-height:1;}
+  nav.tabs button.active{color:var(--primary-dark);}
   nav.tabs button:hover{color:var(--ink);}
 
-  .tabpanel{display:none;}
+  .tabpanel{display:none;padding:20px 20px 0;}
   .tabpanel.active{display:block;}
+  #tab-dashboard.active{padding:0;}
 
   .panel{
     background:var(--panel);border:1px solid var(--border);border-radius:var(--radius);
@@ -159,6 +176,85 @@
   .stock-form{display:grid;grid-template-columns:1.5fr 1fr 1fr auto;gap:10px;align-items:end;margin-bottom:16px;}
   @media(max-width:700px){.stock-form{grid-template-columns:1fr;}}
 
+  /* ===== DASHBOARD (Home) — warm caramel/cream mobile-style redesign ===== */
+  .dp-frame{max-width:440px;margin:0 auto;}
+  .dp-top{
+    background:var(--tan);padding:20px 18px 22px;border-radius:0 0 26px 26px;
+  }
+  .dp-welcome-row{display:flex;align-items:center;gap:12px;margin-bottom:18px;}
+  .dp-avatar{
+    width:46px;height:46px;border-radius:50%;background:#EFE3CB;flex-shrink:0;
+    display:flex;align-items:center;justify-content:center;font-size:22px;
+    border:2px solid rgba(255,255,255,0.55);
+  }
+  .dp-welcome-sm{font-family:'Inter',sans-serif;font-size:12px;color:rgba(46,36,22,0.72);}
+  .dp-welcome-lg{font-family:'Baloo 2',sans-serif;font-size:18px;font-weight:700;color:var(--brown-ink);}
+
+  .dp-cta-card{
+    background:#fff;border-radius:16px;padding:16px 18px;margin-bottom:10px;
+    display:flex;align-items:center;gap:14px;cursor:pointer;position:relative;overflow:hidden;
+    border:none;width:100%;text-align:left;font-family:'Inter',sans-serif;
+  }
+  .dp-cta-decor{
+    position:absolute;left:-34px;top:-30px;width:130px;height:130px;border-radius:50%;
+    background:radial-gradient(circle, rgba(124,154,92,0.20), transparent 68%);
+  }
+  .dp-cta-icon{
+    width:44px;height:44px;border-radius:50%;background:var(--green-cta);color:#fff;
+    display:flex;align-items:center;justify-content:center;font-size:23px;font-weight:700;flex-shrink:0;
+    position:relative;z-index:1;
+  }
+  .dp-cta-title{font-family:'Baloo 2',sans-serif;font-size:16px;font-weight:700;color:var(--brown-ink);}
+  .dp-cta-sub{font-size:11.5px;color:var(--ink-soft);margin-top:1px;}
+
+  .dp-shortcut-row{background:#fff;border-radius:16px;padding:12px 8px;display:flex;align-items:stretch;}
+  .dp-shortcut{
+    flex:1;display:flex;align-items:center;gap:9px;padding:4px 8px;cursor:pointer;
+    background:none;border:none;text-align:left;font-family:'Inter',sans-serif;
+  }
+  .dp-shortcut-icon{font-size:19px;}
+  .dp-shortcut-title{font-family:'Baloo 2',sans-serif;font-size:12.5px;font-weight:700;color:var(--brown-ink);}
+  .dp-shortcut-sub{font-size:10.5px;color:var(--ink-soft);}
+  .dp-shortcut-divider{width:1px;align-self:stretch;background:var(--border);margin:2px 2px;}
+
+  .dp-body{background:var(--cream);padding:22px 16px 4px;border-radius:22px 22px 0 0;margin-top:-14px;}
+  .dp-section-title-row{display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;}
+  .dp-section-title-row h2{font-family:'Baloo 2',sans-serif;font-size:19px;font-weight:800;margin:0;color:var(--brown-ink);}
+  .dp-pill{
+    border:1.5px solid var(--brown-ink);border-radius:20px;padding:5px 12px;font-size:12px;font-weight:600;
+    display:flex;align-items:center;gap:3px;color:var(--brown-ink);
+  }
+
+  .dp-revenue-card{
+    background:var(--tan);border-radius:14px;padding:15px 16px;display:flex;align-items:center;gap:12px;
+    margin-bottom:14px;
+  }
+  .dp-revenue-icon{font-size:22px;background:#fff;border-radius:10px;padding:7px 9px;line-height:1;}
+  .dp-revenue-amount{font-family:'Baloo 2',sans-serif;font-size:17px;font-weight:800;color:#fff;}
+  .dp-revenue-label{font-size:11.5px;color:rgba(255,255,255,0.88);margin-top:1px;}
+
+  .dp-list-card{background:#fff;border-radius:14px;overflow:hidden;margin-bottom:14px;}
+  .dp-list-header{
+    background:var(--tan);color:#fff;font-family:'Baloo 2',sans-serif;font-weight:700;font-size:13.5px;
+    padding:11px 14px;display:flex;align-items:center;gap:8px;
+  }
+  .dp-list-body{padding:2px 14px;}
+  .dp-list-row{display:flex;justify-content:space-between;gap:10px;padding:9px 0;border-bottom:1px dashed var(--border);font-size:12.5px;}
+  .dp-list-row:last-child{border-bottom:none;}
+  .dp-list-row .qty{font-weight:700;flex-shrink:0;}
+
+  .dp-order-row{
+    padding:10px 0;border-bottom:1px dashed var(--border);
+    display:grid;grid-template-columns:62px 1fr auto;gap:4px 8px;font-size:11.5px;
+  }
+  .dp-order-row:last-child{border-bottom:none;}
+  .dp-order-row .oname{font-weight:700;grid-row:1/3;align-self:start;}
+  .dp-order-row .oprod{color:var(--ink-soft);line-height:1.5;}
+  .dp-order-row .oprice{font-weight:600;text-align:right;}
+  .dp-order-row .otime{color:var(--ink-soft);text-align:right;grid-column:3;}
+
+  .dp-empty{padding:12px 0;color:var(--ink-soft);font-size:12px;font-style:italic;}
+
   /* RECEIPT / STRUK */
   #receiptOverlay{
     display:none;position:fixed;inset:0;background:rgba(20,24,18,0.55);
@@ -192,36 +288,81 @@
 </head>
 <body>
 <div class="app">
-  <header>
-    <h1>Dapur Parto — Order Management</h1>
-    <p>Pencatatan order, dashboard harian, dan belanja stok</p>
-  </header>
-
   <nav class="tabs">
-    <button data-tab="dashboard" class="active">Dashboard</button>
-    <button data-tab="form">+ Order Baru</button>
-    <button data-tab="list">Daftar Order</button>
-    <button data-tab="stock">Belanja Stok</button>
-    <button data-tab="settings">Pengaturan</button>
+    <button data-tab="dashboard" class="active"><span class="nav-icon">🏠</span>Home</button>
+    <button data-tab="form"><span class="nav-icon">🛍️</span>Add New Order</button>
+    <button data-tab="list"><span class="nav-icon">📋</span>Order</button>
+    <button data-tab="settings"><span class="nav-icon">☕</span>Product</button>
+    <button data-tab="stock"><span class="nav-icon">📦</span>Stock</button>
   </nav>
 
   <!-- DASHBOARD -->
   <div class="tabpanel active" id="tab-dashboard">
-    <div class="grid3" style="margin-bottom:18px;">
-      <div class="stat"><div class="label">Keuntungan Hari Ini</div><div class="value" id="dashProfit">Rp 0</div></div>
-      <div class="stat"><div class="label">Order Hari Ini (Jadwal Antar)</div><div class="value" id="dashCountToday">0</div></div>
-      <div class="stat"><div class="label">Order Besok (Jadwal Antar)</div><div class="value" id="dashCountTomorrow">0</div></div>
-    </div>
-    <div class="grid2">
-      <div class="panel">
-        <h2>Antar Hari Ini</h2>
-        <p class="desc">Berdasarkan jadwal antar</p>
-        <ul class="dash-list" id="dashToday"></ul>
+    <div class="dp-frame">
+      <div class="dp-top">
+        <div class="dp-welcome-row">
+          <div class="dp-avatar">🐻</div>
+          <div>
+            <div class="dp-welcome-sm">Welcome to</div>
+            <div class="dp-welcome-lg">Dapur Parto</div>
+          </div>
+        </div>
+
+        <button class="dp-cta-card" id="dpCtaAddOrder" type="button">
+          <div class="dp-cta-decor"></div>
+          <div class="dp-cta-icon">+</div>
+          <div>
+            <div class="dp-cta-title">Add New Order</div>
+            <div class="dp-cta-sub">Add your next order</div>
+          </div>
+        </button>
+
+        <div class="dp-shortcut-row">
+          <button class="dp-shortcut" id="dpShortcutStock" type="button">
+            <span class="dp-shortcut-icon">📦</span>
+            <div><div class="dp-shortcut-title">Add Stock</div><div class="dp-shortcut-sub">Belanja Stock</div></div>
+          </button>
+          <div class="dp-shortcut-divider"></div>
+          <button class="dp-shortcut" id="dpShortcutProduct" type="button">
+            <span class="dp-shortcut-icon">☕</span>
+            <div><div class="dp-shortcut-title">Add Product</div><div class="dp-shortcut-sub">Produk baru</div></div>
+          </button>
+        </div>
       </div>
-      <div class="panel">
-        <h2>Antar Besok</h2>
-        <p class="desc">Berdasarkan jadwal antar</p>
-        <ul class="dash-list" id="dashTomorrow"></ul>
+
+      <div class="dp-body">
+        <div class="dp-section-title-row">
+          <h2>Dashboard</h2>
+          <div class="dp-pill">Today <span>›</span></div>
+        </div>
+
+        <div class="dp-revenue-card">
+          <span class="dp-revenue-icon">🏪</span>
+          <div>
+            <div class="dp-revenue-amount" id="dashRevenue">Rp 0</div>
+            <div class="dp-revenue-label">Revenue Today</div>
+          </div>
+        </div>
+
+        <div class="dp-list-card">
+          <div class="dp-list-header"><span>🧺</span> Today Production</div>
+          <div class="dp-list-body" id="dashProduction"></div>
+        </div>
+
+        <div class="dp-list-card">
+          <div class="dp-list-header"><span>🛵</span> Deliver Today</div>
+          <div class="dp-list-body" id="dashDeliverToday"></div>
+        </div>
+
+        <div class="dp-list-card">
+          <div class="dp-list-header"><span>📋</span> Order Today</div>
+          <div class="dp-list-body" id="dashOrderToday"></div>
+        </div>
+
+        <div class="dp-list-card">
+          <div class="dp-list-header"><span>📦</span> Stock</div>
+          <div class="dp-list-body" id="dashStock"></div>
+        </div>
       </div>
     </div>
   </div>
@@ -571,38 +712,78 @@ function isSameDay(ts, dateObj){
   const d = new Date(ts);
   return d.getFullYear()===dateObj.getFullYear() && d.getMonth()===dateObj.getMonth() && d.getDate()===dateObj.getDate();
 }
+function relativeDeliveryLabel(ts){
+  if(!ts) return '-';
+  const d = new Date(ts);
+  const now = new Date();
+  const tmr = new Date(now); tmr.setDate(now.getDate()+1);
+  const timeStr = d.toLocaleTimeString('id-ID',{hour:'2-digit',minute:'2-digit'});
+  if(isSameDay(ts, now)) return 'Hari ini, '+timeStr;
+  if(isSameDay(ts, tmr)) return 'Besok, '+timeStr;
+  return d.toLocaleDateString('id-ID',{day:'2-digit',month:'short'}) + ', ' + timeStr;
+}
+
 function renderDashboard(){
   const now = new Date();
-  const tomorrow = new Date(now); tomorrow.setDate(now.getDate()+1);
 
-  const todayOrders = orders.filter(o=>isSameDay(o.deliverySchedule, now));
-  const tomorrowOrders = orders.filter(o=>isSameDay(o.deliverySchedule, tomorrow));
-  const placedTodayOrders = orders.filter(o=>isSameDay(o.orderDate, now));
+  const deliverToday = orders.filter(o=>isSameDay(o.deliverySchedule, now));
+  const placedToday = orders.filter(o=>isSameDay(o.orderDate, now));
 
-  document.getElementById('dashCountToday').textContent = todayOrders.length;
-  document.getElementById('dashCountTomorrow').textContent = tomorrowOrders.length;
+  // Revenue Today = total nilai order yang MASUK hari ini
+  const revenue = placedToday.reduce((s,o)=>s+(o.total||0), 0);
+  document.getElementById('dashRevenue').textContent = rupiah(revenue);
 
-  let profit = 0;
-  placedTodayOrders.forEach(o=>{
+  // Today Production = rekap qty produk dari order yang jadwal antarnya hari ini
+  const prodTally = {};
+  deliverToday.forEach(o=>{
     o.items.forEach(it=>{
-      const prod = products.find(p=>p.id===it.productId);
-      const modal = prod ? (prod.modal||0) : 0;
-      profit += (it.unitPrice - modal) * it.qty;
-      (it.addons||[]).forEach(a=> profit += a.price * a.qty); // addons assumed no cost tracked
+      prodTally[it.name] = (prodTally[it.name]||0) + it.qty;
     });
   });
-  document.getElementById('dashProfit').textContent = rupiah(profit);
+  const prodEntries = Object.entries(prodTally);
+  document.getElementById('dashProduction').innerHTML = prodEntries.length ? prodEntries.map(([name,qty])=>`
+    <div class="dp-list-row"><span>${name}</span><span class="qty">${qty}</span></div>
+  `).join('') : '<div class="dp-empty">Belum ada order yang perlu diproduksi hari ini.</div>';
 
-  function listHtml(list){
-    if(list.length===0) return '<div class="empty-note">Belum ada order.</div>';
-    return '<ul class="dash-list">' + list.map(o=>{
-      const items = o.items.map(it=>`${it.qty}× ${it.name}`).join(', ');
-      return `<li><div class="who">${o.customerName}</div><div class="what">${items}</div></li>`;
-    }).join('') + '</ul>';
+  // Deliver Today
+  function orderRowHtml(o, timeLabel){
+    const prodLines = o.items.map(it=>`${it.name} x${it.qty}`).join('<br>');
+    return `
+      <div class="dp-order-row">
+        <span class="oname">${o.customerName}</span>
+        <span class="oprod">${prodLines}</span>
+        <span class="oprice">${rupiah(o.total)}</span>
+        <span class="otime">${timeLabel}</span>
+      </div>
+    `;
   }
-  document.getElementById('dashToday').outerHTML = `<div id="dashToday">${listHtml(todayOrders)}</div>`;
-  document.getElementById('dashTomorrow').outerHTML = `<div id="dashTomorrow">${listHtml(tomorrowOrders)}</div>`;
+  document.getElementById('dashDeliverToday').innerHTML = deliverToday.length ? deliverToday.map(o=>{
+    const d = o.deliverySchedule ? new Date(o.deliverySchedule) : null;
+    const t = d ? d.toLocaleTimeString('id-ID',{hour:'2-digit',minute:'2-digit'}) : '-';
+    return orderRowHtml(o, t);
+  }).join('') : '<div class="dp-empty">Nggak ada pengantaran hari ini.</div>';
+
+  // Order Today (order yang DIBUAT hari ini, apapun jadwal antarnya)
+  document.getElementById('dashOrderToday').innerHTML = placedToday.length ? placedToday.map(o=>{
+    return orderRowHtml(o, relativeDeliveryLabel(o.deliverySchedule));
+  }).join('') : '<div class="dp-empty">Belum ada order masuk hari ini.</div>';
+
+  // Stock — belanja stok terbaru
+  const recentStock = [...stock].sort((a,b)=>b.tanggal-a.tanggal).slice(0,6);
+  document.getElementById('dashStock').innerHTML = recentStock.length ? recentStock.map(s=>`
+    <div class="dp-list-row"><span>${s.item}</span><span class="qty">${rupiah(s.harga)}</span></div>
+  `).join('') : '<div class="dp-empty">Belum ada belanja stok tercatat.</div>';
 }
+
+document.getElementById('dpCtaAddOrder').addEventListener('click', ()=>{
+  document.querySelector('nav.tabs [data-tab="form"]').click();
+});
+document.getElementById('dpShortcutStock').addEventListener('click', ()=>{
+  document.querySelector('nav.tabs [data-tab="stock"]').click();
+});
+document.getElementById('dpShortcutProduct').addEventListener('click', ()=>{
+  document.querySelector('nav.tabs [data-tab="settings"]').click();
+});
 
 /* ===================== FORM ORDER ===================== */
 function refreshFormOptions(){
