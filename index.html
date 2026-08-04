@@ -229,7 +229,10 @@
   <!-- FORM ORDER -->
   <div class="tabpanel" id="tab-form">
     <div class="panel">
-      <h2>Order Baru</h2>
+      <h2 id="formHeading">Order Baru</h2>
+      <div id="editBanner" class="hidden" style="background:var(--amber-soft);color:var(--amber);padding:8px 12px;border-radius:var(--radius);font-size:12.5px;font-weight:600;margin-bottom:12px;">
+        ✏️ Lagi edit order lama — perubahan bakal nimpa data yang udah ada.
+      </div>
       <p class="desc">Isi detail order yang masuk</p>
 
       <div class="grid2">
@@ -276,6 +279,24 @@
         <button class="btn-ghost" id="btnAddItem" type="button">+ Tambah Produk</button>
       </div>
 
+      <div class="grid2">
+        <div class="form-row">
+          <label>Ongkir (Gojek/Grab, dll)</label>
+          <input type="number" id="fOngkir" min="0" placeholder="0" value="0">
+        </div>
+        <div class="form-row">
+          <div class="readonly-box" style="margin-top:22px;font-size:12px;">Cek tarif di app kurir, masukin manual di sini.</div>
+        </div>
+      </div>
+
+      <div class="total-row" style="border-top:none;padding-top:0;">
+        <span class="lbl">Subtotal Produk</span>
+        <span class="amt" style="font-size:14px;font-weight:600;" id="formSubtotal">Rp 0</span>
+      </div>
+      <div class="total-row" style="padding:6px 0;">
+        <span class="lbl">Ongkir</span>
+        <span class="amt" style="font-size:14px;font-weight:600;" id="formOngkirDisplay">Rp 0</span>
+      </div>
       <div class="total-row">
         <span class="lbl">Total Harga</span>
         <span class="amt" id="formTotal">Rp 0</span>
@@ -289,6 +310,7 @@
       <div style="display:flex;gap:10px;">
         <button class="btn btn-primary" id="btnSaveOrder">Simpan Order</button>
         <button class="btn btn-secondary" id="btnResetForm" type="button">Reset</button>
+        <button class="btn btn-secondary hidden" id="btnCancelEdit" type="button" style="color:var(--red);">Batal Edit</button>
       </div>
 
       <div id="savedBox" class="hidden" style="margin-top:14px;padding:12px 14px;background:var(--primary-soft);border-radius:var(--radius);display:flex;align-items:center;justify-content:space-between;gap:10px;">
@@ -331,7 +353,7 @@
         <table>
           <thead><tr>
             <th>Tgl Order</th><th>Customer</th><th>Produk</th><th>Channel</th>
-            <th>Jadwal Antar</th><th>Total</th><th>Status</th><th>Notes</th><th>Struk</th><th></th>
+            <th>Jadwal Antar</th><th>Total</th><th>Status</th><th>Notes</th><th>Edit</th><th>Struk</th><th></th>
           </tr></thead>
           <tbody id="listBody"></tbody>
         </table>
@@ -403,8 +425,8 @@ const toAddonRow = a => ({id:a.id, name:a.name, price:a.price||0});
 const fromAddonRow = r => ({id:r.id, name:r.name, price:r.price||0});
 const toChannelRow = c => ({id:c.id, name:c.name, type:c.type});
 const fromChannelRow = r => ({id:r.id, name:r.name, type:r.type});
-const toOrderRow = o => ({id:o.id, customer_name:o.customerName, order_date:o.orderDate, channel_id:o.channelId, channel_name:o.channelName, channel_type:o.channelType, delivery_schedule:o.deliverySchedule, items:o.items, total:o.total, status:o.status, notes:o.notes});
-const fromOrderRow = r => ({id:r.id, customerName:r.customer_name, orderDate:r.order_date, channelId:r.channel_id, channelName:r.channel_name, channelType:r.channel_type, deliverySchedule:r.delivery_schedule, items:r.items, total:r.total, status:r.status, notes:r.notes});
+const toOrderRow = o => ({id:o.id, customer_name:o.customerName, order_date:o.orderDate, channel_id:o.channelId, channel_name:o.channelName, channel_type:o.channelType, delivery_schedule:o.deliverySchedule, items:o.items, subtotal:o.subtotal||0, ongkir:o.ongkir||0, total:o.total, status:o.status, notes:o.notes});
+const fromOrderRow = r => ({id:r.id, customerName:r.customer_name, orderDate:r.order_date, channelId:r.channel_id, channelName:r.channel_name, channelType:r.channel_type, deliverySchedule:r.delivery_schedule, items:r.items, subtotal:r.subtotal||0, ongkir:r.ongkir||0, total:r.total, status:r.status, notes:r.notes});
 const toStockRow = s => ({id:s.id, item:s.item, harga:s.harga, tanggal:s.tanggal});
 const fromStockRow = r => ({id:r.id, item:r.item, harga:r.harga, tanggal:r.tanggal});
 
@@ -668,28 +690,70 @@ function renderItemRows(){
   recalcFormTotal();
 }
 function recalcFormTotal(){
-  let total = 0;
+  let subtotal = 0;
   formItems.forEach(r=>{
     const prod = products.find(p=>p.id===r.productId);
     const unitPrice = unitPriceFor(prod);
     const addonTotal = r.addonIds.reduce((s,aid)=>{ const a = addons.find(x=>x.id===aid); return s + (a?a.price:0); },0);
-    total += unitPrice*r.qty + addonTotal*r.qty;
+    subtotal += unitPrice*r.qty + addonTotal*r.qty;
   });
-  document.getElementById('formTotal').textContent = rupiah(total);
+  const ongkir = parseInt(document.getElementById('fOngkir').value)||0;
+  document.getElementById('formSubtotal').textContent = rupiah(subtotal);
+  document.getElementById('formOngkirDisplay').textContent = rupiah(ongkir);
+  document.getElementById('formTotal').textContent = rupiah(subtotal+ongkir);
 }
+document.getElementById('fOngkir').addEventListener('input', recalcFormTotal);
 document.getElementById('fChannel').addEventListener('change', ()=>{ renderItemRows(); });
 
+let editingOrderId = null;
+
+function updateFormModeUI(){
+  const editing = !!editingOrderId;
+  document.getElementById('formHeading').textContent = editing ? 'Edit Order' : 'Order Baru';
+  document.getElementById('editBanner').classList.toggle('hidden', !editing);
+  document.getElementById('btnCancelEdit').classList.toggle('hidden', !editing);
+  document.getElementById('btnSaveOrder').textContent = editing ? 'Update Order' : 'Simpan Order';
+}
+
 function resetForm(){
+  editingOrderId = null;
   document.getElementById('savedBox').classList.add('hidden');
   document.getElementById('fCustomer').value='';
   document.getElementById('fStatus').value='Confirmed';
   document.getElementById('fDeliveryDate').value = todayStr();
   document.getElementById('fDeliveryTime').value = '';
+  document.getElementById('fOngkir').value = '0';
   document.getElementById('fNotes').value='';
   formItems = [];
   addItemRow();
   refreshFormOptions();
+  updateFormModeUI();
 }
+
+function editOrder(order){
+  editingOrderId = order.id;
+  document.querySelector('nav.tabs [data-tab="form"]').click();
+  document.getElementById('fCustomer').value = order.customerName;
+  document.getElementById('fChannel').value = order.channelId;
+  document.getElementById('fStatus').value = order.status;
+  if(order.deliverySchedule){
+    const d = new Date(order.deliverySchedule);
+    document.getElementById('fDeliveryDate').value = d.toISOString().slice(0,10);
+    document.getElementById('fDeliveryTime').value = d.toTimeString().slice(0,5);
+  }else{
+    document.getElementById('fDeliveryDate').value = '';
+    document.getElementById('fDeliveryTime').value = '';
+  }
+  document.getElementById('fOngkir').value = order.ongkir||0;
+  document.getElementById('fNotes').value = order.notes||'';
+  formItems = order.items.map(it=>{
+    rowCounter++;
+    return { rowId: rowCounter, productId: it.productId, qty: it.qty, addonIds: (it.addons||[]).map(a=>a.addonId) };
+  });
+  renderItemRows();
+  updateFormModeUI();
+}
+document.getElementById('btnCancelEdit').addEventListener('click', resetForm);
 
 async function saveOrder(){
   const name = document.getElementById('fCustomer').value.trim();
@@ -701,8 +765,9 @@ async function saveOrder(){
   const dDate = document.getElementById('fDeliveryDate').value;
   const dTime = document.getElementById('fDeliveryTime').value || '00:00';
   const deliverySchedule = dDate ? new Date(dDate+'T'+dTime+':00').getTime() : null;
+  const ongkir = parseInt(document.getElementById('fOngkir').value)||0;
 
-  let total = 0;
+  let subtotal = 0;
   const items = formItems.map(r=>{
     const prod = products.find(p=>p.id===r.productId);
     const unitPrice = unitPriceFor(prod);
@@ -711,29 +776,43 @@ async function saveOrder(){
       return {addonId:aid, name:a?a.name:aid, price:a?a.price:0, qty:r.qty};
     });
     const addonTotal = addonList.reduce((s,a)=>s+a.price*a.qty,0);
-    const subtotal = unitPrice*r.qty + addonTotal;
-    total += subtotal;
-    return {productId:r.productId, name:prod?prod.name:r.productId, qty:r.qty, unitPrice, addons:addonList, subtotal};
+    const itemSubtotal = unitPrice*r.qty + addonTotal;
+    subtotal += itemSubtotal;
+    return {productId:r.productId, name:prod?prod.name:r.productId, qty:r.qty, unitPrice, addons:addonList, subtotal:itemSubtotal};
   });
+  const total = subtotal + ongkir;
+
+  const isEdit = !!editingOrderId;
+  const existing = isEdit ? orders.find(o=>o.id===editingOrderId) : null;
 
   const order = {
-    id: 'ord_'+Date.now(),
+    id: isEdit ? editingOrderId : 'ord_'+Date.now(),
     customerName: name,
-    orderDate: Date.now(),
+    orderDate: isEdit && existing ? existing.orderDate : Date.now(),
     channelId: chId,
     channelName: ch?ch.name:'',
     channelType: ch?ch.type:'Direct',
     deliverySchedule,
     items,
+    subtotal,
+    ongkir,
     total,
     status: document.getElementById('fStatus').value,
     notes: document.getElementById('fNotes').value.trim()
   };
-  orders.unshift(order);
+
+  if(isEdit){
+    const idx = orders.findIndex(o=>o.id===editingOrderId);
+    if(idx>-1) orders[idx] = order; else orders.unshift(order);
+  }else{
+    orders.unshift(order);
+  }
   await saveOrders();
   lastSavedOrder = order;
   resetForm();
   document.getElementById('savedBox').classList.remove('hidden');
+  document.querySelector('#savedBox span').textContent = isEdit ? '✓ Order berhasil diupdate' : '✓ Order tersimpan';
+  renderDashboard();
 }
 document.getElementById('btnAddItem').addEventListener('click', addItemRow);
 document.getElementById('btnSaveOrder').addEventListener('click', saveOrder);
@@ -778,7 +857,7 @@ function renderList(){
 
   const body = document.getElementById('listBody');
   if(filtered.length===0){
-    body.innerHTML = `<tr><td colspan="9" class="empty-note">Belum ada order yang cocok.</td></tr>`;
+    body.innerHTML = `<tr><td colspan="10" class="empty-note">Belum ada order yang cocok.</td></tr>`;
     return;
   }
   body.innerHTML = filtered.map(o=>{
@@ -802,11 +881,19 @@ function renderList(){
           </select>
         </td>
         <td>${o.notes || '-'}</td>
+        <td><button class="btn-secondary btn-sm" data-edit="${o.id}">✏️ Edit</button></td>
         <td><button class="btn-secondary btn-sm" data-struk="${o.id}">🧾 Struk</button></td>
         <td><button class="btn-danger" data-id="${o.id}">Hapus</button></td>
       </tr>
     `;
   }).join('');
+
+  body.querySelectorAll('[data-edit]').forEach(btn=>{
+    btn.addEventListener('click', e=>{
+      const o = orders.find(x=>x.id===btn.dataset.edit);
+      if(o) editOrder(o);
+    });
+  });
 
   body.querySelectorAll('[data-struk]').forEach(btn=>{
     btn.addEventListener('click', e=>{
@@ -999,6 +1086,8 @@ function showReceipt(order){
     <hr>
     ${itemsHtml}
     <hr>
+    <div class="r-row"><span>Subtotal Produk</span><span>${rupiah(order.subtotal!=null ? order.subtotal : order.total)}</span></div>
+    <div class="r-row"><span>Ongkir</span><span>${rupiah(order.ongkir||0)}</span></div>
     <div class="r-row r-total"><span>TOTAL</span><span>${rupiah(order.total)}</span></div>
     <div class="r-row" style="margin-top:6px;"><span>Status</span><span>${order.status}</span></div>
     ${order.notes ? `<div class="r-row"><span>Notes</span><span>${order.notes}</span></div>` : ''}
