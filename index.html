@@ -1,0 +1,1036 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Dapur Parto — Order Management</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#F4F5F3;
+    --panel:#FFFFFF;
+    --border:#DDE1DA;
+    --ink:#20241F;
+    --ink-soft:#5D655A;
+    --primary:#3D6B3A;
+    --primary-dark:#2E512C;
+    --primary-soft:#E7EFE4;
+    --amber:#B5792E;
+    --amber-soft:#F5E9D8;
+    --red:#B4453A;
+    --red-soft:#F6E4E1;
+    --blue:#3A6B8A;
+    --blue-soft:#E3EEF3;
+    --radius:6px;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;background:var(--bg);color:var(--ink);
+    font-family:'Inter',sans-serif;font-size:14px;
+    min-height:100vh;
+  }
+  .app{max-width:1100px;margin:0 auto;padding:24px 20px 80px;}
+
+  header{margin-bottom:20px;}
+  header h1{font-size:22px;font-weight:700;margin:0 0 2px;}
+  header p{margin:0;color:var(--ink-soft);font-size:13px;}
+
+  nav.tabs{
+    display:flex;gap:4px;margin-bottom:22px;border-bottom:1px solid var(--border);
+    overflow-x:auto;
+  }
+  nav.tabs button{
+    background:none;border:none;padding:10px 16px;font-family:'Inter',sans-serif;
+    font-size:13.5px;font-weight:600;color:var(--ink-soft);cursor:pointer;
+    border-bottom:2px solid transparent;white-space:nowrap;
+  }
+  nav.tabs button.active{color:var(--primary-dark);border-bottom-color:var(--primary);}
+  nav.tabs button:hover{color:var(--ink);}
+
+  .tabpanel{display:none;}
+  .tabpanel.active{display:block;}
+
+  .panel{
+    background:var(--panel);border:1px solid var(--border);border-radius:var(--radius);
+    padding:18px 20px;margin-bottom:18px;
+  }
+  .panel h2{font-size:15px;font-weight:700;margin:0 0 4px;}
+  .panel .desc{font-size:12px;color:var(--ink-soft);margin:0 0 14px;}
+
+  .grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;}
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:14px;}
+  @media(max-width:760px){.grid3{grid-template-columns:1fr;}.grid2{grid-template-columns:1fr;}}
+
+  .stat{background:var(--panel);border:1px solid var(--border);border-radius:var(--radius);padding:14px 16px;}
+  .stat .label{font-size:11px;text-transform:uppercase;letter-spacing:0.4px;color:var(--ink-soft);font-weight:600;margin-bottom:6px;}
+  .stat .value{font-size:22px;font-weight:700;}
+
+  .dash-list{list-style:none;margin:10px 0 0;padding:0;}
+  .dash-list li{
+    padding:8px 0;border-bottom:1px dashed var(--border);font-size:13px;
+  }
+  .dash-list li:last-child{border-bottom:none;}
+  .dash-list .who{font-weight:600;}
+  .dash-list .what{color:var(--ink-soft);font-size:12.5px;}
+  .empty-note{color:var(--ink-soft);font-size:12.5px;font-style:italic;padding:6px 0;}
+
+  label{display:block;font-size:11.5px;font-weight:600;text-transform:uppercase;letter-spacing:0.3px;color:var(--ink-soft);margin-bottom:5px;}
+  input[type=text],input[type=number],input[type=date],input[type=time],select,textarea{
+    width:100%;padding:9px 11px;border:1px solid var(--border);border-radius:var(--radius);
+    font-family:'Inter',sans-serif;font-size:13.5px;color:var(--ink);background:#fff;
+  }
+  input:focus,select:focus,textarea:focus{outline:2px solid var(--primary-soft);border-color:var(--primary);}
+  .form-row{margin-bottom:14px;}
+  .readonly-box{
+    padding:9px 11px;border:1px solid var(--border);border-radius:var(--radius);
+    background:#F8F9F7;color:var(--ink-soft);font-size:13.5px;
+  }
+
+  .btn{
+    font-family:'Inter',sans-serif;font-weight:600;font-size:13px;
+    padding:9px 16px;border-radius:var(--radius);border:1px solid transparent;cursor:pointer;
+  }
+  .btn-primary{background:var(--primary);color:#fff;}
+  .btn-primary:hover{background:var(--primary-dark);}
+  .btn-secondary{background:#fff;color:var(--ink);border-color:var(--border);}
+  .btn-secondary:hover{background:#F2F3F1;}
+  .btn-danger{background:#fff;color:var(--red);border-color:var(--red-soft);font-size:12px;padding:5px 10px;}
+  .btn-danger:hover{background:var(--red-soft);}
+  .btn-ghost{background:none;border:1px dashed var(--primary);color:var(--primary-dark);font-size:12.5px;padding:7px 12px;}
+  .btn-ghost:hover{background:var(--primary-soft);}
+  .btn-sm{font-size:12px;padding:5px 10px;}
+
+  .item-row{
+    display:grid;grid-template-columns:1.5fr 70px 1.3fr 90px 30px;gap:8px;align-items:start;
+    margin-bottom:10px;padding-bottom:10px;border-bottom:1px dashed var(--border);
+  }
+  .item-row .addons-box{display:flex;flex-wrap:wrap;gap:6px;padding-top:8px;}
+  .addon-chip{
+    display:flex;align-items:center;gap:5px;border:1px solid var(--border);border-radius:14px;
+    padding:4px 10px;font-size:11.5px;background:#fff;cursor:pointer;user-select:none;
+  }
+  .addon-chip.active{background:var(--primary-soft);border-color:var(--primary);color:var(--primary-dark);}
+  .item-subtotal{font-family:'IBM Plex Mono',monospace;font-size:12.5px;text-align:right;color:var(--ink-soft);align-self:center;}
+  .rm-btn{background:none;border:none;color:var(--red);font-size:18px;cursor:pointer;align-self:center;}
+
+  .total-row{
+    display:flex;justify-content:space-between;align-items:baseline;
+    padding:12px 0;border-top:1px solid var(--border);margin:6px 0 16px;
+  }
+  .total-row .lbl{font-size:13px;color:var(--ink-soft);font-weight:600;}
+  .total-row .amt{font-family:'IBM Plex Mono',monospace;font-size:20px;font-weight:700;}
+
+  table{width:100%;border-collapse:collapse;font-size:12.8px;}
+  th{
+    text-align:left;padding:9px 10px;background:#F8F9F7;color:var(--ink-soft);
+    font-size:11px;text-transform:uppercase;letter-spacing:0.3px;font-weight:700;
+    border-bottom:1px solid var(--border);white-space:nowrap;
+  }
+  td{padding:9px 10px;border-bottom:1px solid var(--border);vertical-align:top;}
+  tr:hover td{background:#FAFBF9;}
+  .table-scroll{overflow-x:auto;}
+
+  .badge{
+    display:inline-block;padding:3px 9px;border-radius:12px;font-size:11px;font-weight:600;
+  }
+  .badge-confirmed{background:var(--blue-soft);color:var(--blue);}
+  .badge-paid{background:var(--amber-soft);color:var(--amber);}
+  .badge-delivered{background:var(--primary-soft);color:var(--primary-dark);}
+  .badge-direct{background:#EEE;color:#555;}
+  .badge-reseller{background:var(--amber-soft);color:var(--amber);}
+
+  select.status-select{padding:5px 8px;font-size:12px;width:auto;}
+
+  .filter-bar{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:14px;}
+  .filter-bar input, .filter-bar select{width:auto;min-width:150px;}
+
+  .settings-section{margin-bottom:26px;}
+  .settings-row{
+    display:grid;grid-template-columns:1.4fr 100px 100px 100px 30px;gap:8px;align-items:center;
+    padding:7px 0;border-bottom:1px dashed var(--border);
+  }
+  .settings-row.addon-row{grid-template-columns:1.4fr 120px 30px;}
+  .settings-row.channel-row{grid-template-columns:1.4fr 140px 30px;}
+  .settings-row input{padding:6px 8px;font-size:12.5px;}
+  .settings-row .name{font-size:13px;font-weight:500;}
+  .col-label{font-size:10px;color:var(--ink-soft);text-transform:uppercase;font-weight:700;}
+
+  .stock-form{display:grid;grid-template-columns:1.5fr 1fr 1fr auto;gap:10px;align-items:end;margin-bottom:16px;}
+  @media(max-width:700px){.stock-form{grid-template-columns:1fr;}}
+
+  /* RECEIPT / STRUK */
+  #receiptOverlay{
+    display:none;position:fixed;inset:0;background:rgba(20,24,18,0.55);
+    z-index:999;padding:24px 16px;overflow:auto;
+  }
+  #receiptOverlay.show{display:block;}
+  .receipt-toolbar{max-width:340px;margin:0 auto 10px;display:flex;justify-content:flex-end;gap:8px;}
+  #receiptPaper{
+    max-width:340px;margin:0 auto;background:#fff;color:#1A1A1A;
+    padding:22px 20px;border-radius:4px;font-family:'IBM Plex Mono',monospace;
+    font-size:12.5px;line-height:1.6;
+  }
+  #receiptPaper .r-shop{text-align:center;font-weight:700;font-size:16px;margin-bottom:2px;letter-spacing:1px;}
+  #receiptPaper .r-tagline{text-align:center;font-size:10.5px;color:#666;margin-bottom:12px;}
+  #receiptPaper hr{border:none;border-top:1px dashed #999;margin:10px 0;}
+  #receiptPaper .r-row{display:flex;justify-content:space-between;gap:10px;}
+  #receiptPaper .r-item{margin-bottom:4px;}
+  #receiptPaper .r-item .r-name{display:block;}
+  #receiptPaper .r-item .r-addon{display:block;font-size:11px;color:#666;padding-left:8px;}
+  #receiptPaper .r-total{font-weight:700;font-size:14px;}
+  #receiptPaper .r-footer{text-align:center;margin-top:14px;font-size:11px;color:#666;}
+
+  @media print{
+    body *{visibility:hidden;}
+    #receiptOverlay, #receiptOverlay *{visibility:visible;}
+    #receiptOverlay{position:absolute;inset:auto;top:0;left:0;background:#fff;padding:0;}
+    #receiptPaper{box-shadow:none;margin:0;}
+    .receipt-toolbar{display:none !important;}
+  }
+</style>
+</head>
+<body>
+<div class="app">
+  <header>
+    <h1>Dapur Parto — Order Management</h1>
+    <p>Pencatatan order, dashboard harian, dan belanja stok</p>
+  </header>
+
+  <nav class="tabs">
+    <button data-tab="dashboard" class="active">Dashboard</button>
+    <button data-tab="form">+ Order Baru</button>
+    <button data-tab="list">Daftar Order</button>
+    <button data-tab="stock">Belanja Stok</button>
+    <button data-tab="settings">Pengaturan</button>
+  </nav>
+
+  <!-- DASHBOARD -->
+  <div class="tabpanel active" id="tab-dashboard">
+    <div class="grid3" style="margin-bottom:18px;">
+      <div class="stat"><div class="label">Keuntungan Hari Ini</div><div class="value" id="dashProfit">Rp 0</div></div>
+      <div class="stat"><div class="label">Order Hari Ini (Jadwal Antar)</div><div class="value" id="dashCountToday">0</div></div>
+      <div class="stat"><div class="label">Order Besok (Jadwal Antar)</div><div class="value" id="dashCountTomorrow">0</div></div>
+    </div>
+    <div class="grid2">
+      <div class="panel">
+        <h2>Antar Hari Ini</h2>
+        <p class="desc">Berdasarkan jadwal antar</p>
+        <ul class="dash-list" id="dashToday"></ul>
+      </div>
+      <div class="panel">
+        <h2>Antar Besok</h2>
+        <p class="desc">Berdasarkan jadwal antar</p>
+        <ul class="dash-list" id="dashTomorrow"></ul>
+      </div>
+    </div>
+  </div>
+
+  <!-- FORM ORDER -->
+  <div class="tabpanel" id="tab-form">
+    <div class="panel">
+      <h2>Order Baru</h2>
+      <p class="desc">Isi detail order yang masuk</p>
+
+      <div class="grid2">
+        <div class="form-row">
+          <label>Nama Customer</label>
+          <input type="text" id="fCustomer" list="customerOptions" placeholder="Ketik nama...">
+          <datalist id="customerOptions"></datalist>
+        </div>
+        <div class="form-row">
+          <label>Tanggal Order</label>
+          <div class="readonly-box" id="fOrderDateDisplay"></div>
+        </div>
+      </div>
+
+      <div class="grid2">
+        <div class="form-row">
+          <label>Channel</label>
+          <select id="fChannel"></select>
+        </div>
+        <div class="form-row">
+          <label>Status</label>
+          <select id="fStatus">
+            <option value="Confirmed">Confirmed</option>
+            <option value="Paid">Paid</option>
+            <option value="Delivered">Delivered</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="grid2">
+        <div class="form-row">
+          <label>Jadwal Antar — Tanggal</label>
+          <input type="date" id="fDeliveryDate">
+        </div>
+        <div class="form-row">
+          <label>Jadwal Antar — Jam</label>
+          <input type="time" id="fDeliveryTime">
+        </div>
+      </div>
+
+      <div class="form-row">
+        <label>Produk yang Dibeli</label>
+        <div id="itemRows"></div>
+        <button class="btn-ghost" id="btnAddItem" type="button">+ Tambah Produk</button>
+      </div>
+
+      <div class="total-row">
+        <span class="lbl">Total Harga</span>
+        <span class="amt" id="formTotal">Rp 0</span>
+      </div>
+
+      <div class="form-row">
+        <label>Notes</label>
+        <textarea id="fNotes" rows="2" placeholder="Catatan tambahan..."></textarea>
+      </div>
+
+      <div style="display:flex;gap:10px;">
+        <button class="btn btn-primary" id="btnSaveOrder">Simpan Order</button>
+        <button class="btn btn-secondary" id="btnResetForm" type="button">Reset</button>
+      </div>
+
+      <div id="savedBox" class="hidden" style="margin-top:14px;padding:12px 14px;background:var(--primary-soft);border-radius:var(--radius);display:flex;align-items:center;justify-content:space-between;gap:10px;">
+        <span style="font-size:13px;color:var(--primary-dark);font-weight:600;">✓ Order tersimpan</span>
+        <button class="btn btn-secondary btn-sm" id="btnPrintLastOrder" type="button">🧾 Cetak Struk</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="receiptOverlay">
+    <div class="receipt-toolbar">
+      <button class="btn btn-secondary btn-sm" id="btnDoPrint">🖨️ Cetak / Simpan PDF</button>
+      <button class="btn btn-secondary btn-sm" id="btnCloseReceipt">Tutup</button>
+    </div>
+    <div id="receiptPaper"></div>
+  </div>
+
+  <!-- LIST ORDER -->
+  <div class="tabpanel" id="tab-list">
+    <div class="panel">
+      <h2>Daftar Order</h2>
+      <div class="filter-bar">
+        <input type="text" id="lSearch" placeholder="Cari nama customer...">
+        <select id="lStatus">
+          <option value="all">Semua Status</option>
+          <option value="Confirmed">Confirmed</option>
+          <option value="Paid">Paid</option>
+          <option value="Delivered">Delivered</option>
+        </select>
+        <select id="lChannel"><option value="all">Semua Channel</option></select>
+        <select id="lSort">
+          <option value="order_desc">Tanggal Order Terbaru</option>
+          <option value="order_asc">Tanggal Order Terlama</option>
+          <option value="delivery_asc">Jadwal Antar Terdekat</option>
+          <option value="total_desc">Total Tertinggi</option>
+          <option value="total_asc">Total Terendah</option>
+        </select>
+      </div>
+      <div class="table-scroll">
+        <table>
+          <thead><tr>
+            <th>Tgl Order</th><th>Customer</th><th>Produk</th><th>Channel</th>
+            <th>Jadwal Antar</th><th>Total</th><th>Status</th><th>Notes</th><th>Struk</th><th></th>
+          </tr></thead>
+          <tbody id="listBody"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- BELANJA STOK -->
+  <div class="tabpanel" id="tab-stock">
+    <div class="panel">
+      <h2>Daftar Belanja Stok</h2>
+      <p class="desc">Catat pembelian bahan baku</p>
+      <div class="stock-form">
+        <div><label>Item</label><input type="text" id="sItem" placeholder="mis. Bubuk Matcha 500g"></div>
+        <div><label>Harga</label><input type="number" id="sHarga" placeholder="0"></div>
+        <div><label>Tanggal</label><input type="date" id="sTanggal"></div>
+        <button class="btn btn-primary" id="btnAddStock">+ Tambah</button>
+      </div>
+      <div class="table-scroll">
+        <table>
+          <thead><tr><th>Item</th><th>Harga</th><th>Tanggal</th><th></th></tr></thead>
+          <tbody id="stockBody"></tbody>
+        </table>
+      </div>
+      <div class="total-row"><span class="lbl">Total Belanja</span><span class="amt" id="stockTotal">Rp 0</span></div>
+    </div>
+  </div>
+
+  <!-- SETTINGS -->
+  <div class="tabpanel" id="tab-settings">
+    <div class="panel settings-section">
+      <h2>Produk &amp; Harga</h2>
+      <p class="desc">Harga Direct = harga jual biasa. Harga Reseller = harga khusus untuk channel reseller. Harga Modal = biaya produksi (untuk hitung keuntungan).</p>
+      <div class="settings-row" style="border-bottom:1px solid var(--border);">
+        <span class="col-label">Produk</span><span class="col-label">Direct</span><span class="col-label">Reseller</span><span class="col-label">Modal</span><span></span>
+      </div>
+      <div id="productSettings"></div>
+    </div>
+
+    <div class="panel settings-section">
+      <h2>Add-Ons</h2>
+      <p class="desc">mis. Oat Milk, Extra Shot, dll.</p>
+      <div id="addonSettings"></div>
+      <button class="btn-ghost" id="btnAddAddon" type="button">+ Tambah Add-On</button>
+    </div>
+
+    <div class="panel settings-section">
+      <h2>Channel</h2>
+      <p class="desc">Tentukan channel penjualan dan tipe harganya (Direct / Reseller).</p>
+      <div id="channelSettings"></div>
+      <button class="btn-ghost" id="btnAddChannel" type="button">+ Tambah Channel</button>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+/* ---------------------------------------------------------------
+   Supabase connection — data disimpan di cloud, sync di semua device.
+---------------------------------------------------------------- */
+const SUPABASE_URL = 'https://cndziikkqtbeultmdgpa.supabase.co';
+const SUPABASE_KEY = 'sb_publishable_6IBwi4TrLqjI3vYmHXIGIQ_KL_DL-iz';
+const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+/* mapping antara nama kolom database (snake_case) <-> objek app (camelCase) */
+const toProductRow = p => ({id:p.id, name:p.name, price_direct:p.priceDirect||0, price_reseller:p.priceReseller||0, modal:p.modal||0});
+const fromProductRow = r => ({id:r.id, name:r.name, priceDirect:r.price_direct||0, priceReseller:r.price_reseller||0, modal:r.modal||0});
+const toAddonRow = a => ({id:a.id, name:a.name, price:a.price||0});
+const fromAddonRow = r => ({id:r.id, name:r.name, price:r.price||0});
+const toChannelRow = c => ({id:c.id, name:c.name, type:c.type});
+const fromChannelRow = r => ({id:r.id, name:r.name, type:r.type});
+const toOrderRow = o => ({id:o.id, customer_name:o.customerName, order_date:o.orderDate, channel_id:o.channelId, channel_name:o.channelName, channel_type:o.channelType, delivery_schedule:o.deliverySchedule, items:o.items, total:o.total, status:o.status, notes:o.notes});
+const fromOrderRow = r => ({id:r.id, customerName:r.customer_name, orderDate:r.order_date, channelId:r.channel_id, channelName:r.channel_name, channelType:r.channel_type, deliverySchedule:r.delivery_schedule, items:r.items, total:r.total, status:r.status, notes:r.notes});
+const toStockRow = s => ({id:s.id, item:s.item, harga:s.harga, tanggal:s.tanggal});
+const fromStockRow = r => ({id:r.id, item:r.item, harga:r.harga, tanggal:r.tanggal});
+
+/* ===================== DATA & STORAGE ===================== */
+const DEFAULT_PRODUCTS = [
+  {id:'matcha-250', name:'Matcha Latte 250ml', priceDirect:0, priceReseller:0, modal:0},
+  {id:'matcha-1l', name:'Matcha Latte 1L', priceDirect:0, priceReseller:0, modal:0},
+  {id:'kopigula-250', name:'Kopi Susu Gula Aren 250ml', priceDirect:0, priceReseller:0, modal:0},
+  {id:'kopigula-1l', name:'Kopi Susu Gula Aren 1L', priceDirect:0, priceReseller:0, modal:0},
+  {id:'creamy-250', name:'Creamy Latte 250ml', priceDirect:0, priceReseller:0, modal:0},
+  {id:'creamy-1l', name:'Creamy Latte 1L', priceDirect:0, priceReseller:0, modal:0},
+  {id:'rmt-150', name:'Roasted Milk Tea 150ml', priceDirect:0, priceReseller:0, modal:0},
+  {id:'rmt-250', name:'Roasted Milk Tea 250ml', priceDirect:0, priceReseller:0, modal:0},
+  {id:'rmt-1l', name:'Roasted Milk Tea 1L', priceDirect:0, priceReseller:0, modal:0},
+];
+const DEFAULT_ADDONS = [
+  {id:'addon-oatmilk', name:'Oat Milk', price:0},
+];
+const DEFAULT_CHANNELS = [
+  {id:'ch-direct', name:'Direct', type:'Direct'},
+  {id:'ch-rahma', name:'Reseller Rahma', type:'Reseller'},
+  {id:'ch-puji', name:'Reseller Puji', type:'Reseller'},
+  {id:'ch-putri', name:'Reseller Putri', type:'Reseller'},
+  {id:'ch-ibu', name:'Reseller Ibu', type:'Reseller'},
+];
+
+let products = [], addons = [], channels = [], orders = [], stock = [];
+let formItems = []; // {rowId, productId, qty, addonIds:[]}
+let rowCounter = 0;
+
+function rupiah(n){ return 'Rp ' + Math.round(n||0).toLocaleString('id-ID'); }
+function todayStr(){ const d=new Date(); return d.toISOString().slice(0,10); }
+function fmtDate(ts){
+  if(!ts) return '-';
+  return new Date(ts).toLocaleDateString('id-ID',{day:'2-digit',month:'short',year:'numeric'});
+}
+function fmtDateTime(ts){
+  if(!ts) return '-';
+  const d = new Date(ts);
+  return d.toLocaleDateString('id-ID',{day:'2-digit',month:'short',year:'numeric'}) + ' ' + d.toLocaleTimeString('id-ID',{hour:'2-digit',minute:'2-digit'});
+}
+
+async function loadAll(){
+  const [pRes, aRes, cRes, oRes, sRes] = await Promise.all([
+    sb.from('products').select('*'),
+    sb.from('addons').select('*'),
+    sb.from('channels').select('*'),
+    sb.from('orders').select('*').order('order_date', {ascending:false}),
+    sb.from('stock').select('*').order('tanggal', {ascending:false}),
+  ]);
+  const errs = [];
+  function logErr(label, err){
+    if(!err) return;
+    const msg = (err && err.message) ? err.message : String(err);
+    try{ console.error(label+':', msg); }catch(e){ /* ignore console relay failure */ }
+    errs.push(label+': '+msg);
+  }
+  logErr('products', pRes.error);
+  logErr('addons', aRes.error);
+  logErr('channels', cRes.error);
+  logErr('orders', oRes.error);
+  logErr('stock', sRes.error);
+  if(errs.length) showToast('Gagal load dari server — '+errs.join(' | '));
+
+  products = (pRes.data && pRes.data.length) ? pRes.data.map(fromProductRow) : DEFAULT_PRODUCTS;
+  addons = (aRes.data) ? aRes.data.map(fromAddonRow) : DEFAULT_ADDONS;
+  channels = (cRes.data && cRes.data.length) ? cRes.data.map(fromChannelRow) : DEFAULT_CHANNELS;
+  orders = (oRes.data || []).map(fromOrderRow);
+  stock = (sRes.data || []).map(fromStockRow);
+}
+async function saveProducts(){
+  const { error } = await sb.from('products').upsert(products.map(toProductRow));
+  if(error){ try{console.error('saveProducts error:', error.message);}catch(e){} showToast('Gagal simpan ke server: '+error.message); }
+}
+async function saveAddons(){
+  const { error } = await sb.from('addons').upsert(addons.map(toAddonRow));
+  if(error){ try{console.error('saveAddons error:', error.message);}catch(e){} showToast('Gagal simpan ke server: '+error.message); }
+}
+async function saveChannels(){
+  const { error } = await sb.from('channels').upsert(channels.map(toChannelRow));
+  if(error){ try{console.error('saveChannels error:', error.message);}catch(e){} showToast('Gagal simpan ke server: '+error.message); }
+}
+async function saveOrders(){
+  const { error } = await sb.from('orders').upsert(orders.map(toOrderRow));
+  if(error){ try{console.error('saveOrders error:', error.message);}catch(e){} showToast('Gagal simpan ke server: '+error.message); }
+}
+async function saveStock(){
+  const { error } = await sb.from('stock').upsert(stock.map(toStockRow));
+  if(error){ try{console.error('saveStock error:', error.message);}catch(e){} showToast('Gagal simpan ke server: '+error.message); }
+}
+async function deleteRemote(table, id){
+  const { error } = await sb.from(table).delete().eq('id', id);
+  if(error){ try{console.error('delete error:', table, error.message);}catch(e){} showToast('Gagal hapus di server: '+error.message); }
+}
+
+function showToast(message){
+  const toast = document.createElement('div');
+  toast.textContent = message;
+  toast.style.cssText = 'position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:#20241F;color:#fff;padding:11px 18px;border-radius:6px;font-size:13px;z-index:1001;box-shadow:0 6px 18px rgba(0,0,0,0.25);max-width:80vw;text-align:center;';
+  document.body.appendChild(toast);
+  setTimeout(()=>toast.remove(), 2600);
+}
+
+/* ===================== CUSTOM CONFIRM (native confirm() is blocked in artifact sandbox) ===================== */
+function askConfirm(message){
+  return new Promise(resolve=>{
+    const overlay = document.createElement('div');
+    overlay.style.cssText = 'position:fixed;inset:0;background:rgba(20,24,18,0.55);z-index:1000;display:flex;align-items:center;justify-content:center;padding:20px;';
+    overlay.innerHTML = `
+      <div style="background:#fff;border-radius:8px;padding:20px 22px;max-width:320px;width:100%;font-family:'Inter',sans-serif;box-shadow:0 8px 24px rgba(0,0,0,0.2);">
+        <p style="margin:0 0 16px;font-size:14px;color:#20241F;">${message}</p>
+        <div style="display:flex;gap:8px;justify-content:flex-end;">
+          <button id="askCancelBtn" class="btn btn-secondary btn-sm" type="button">Batal</button>
+          <button id="askOkBtn" class="btn btn-primary btn-sm" type="button" style="background:#B4453A;">Hapus</button>
+        </div>
+      </div>
+    `;
+    document.body.appendChild(overlay);
+    overlay.querySelector('#askCancelBtn').addEventListener('click', ()=>{ overlay.remove(); resolve(false); });
+    overlay.querySelector('#askOkBtn').addEventListener('click', ()=>{ overlay.remove(); resolve(true); });
+  });
+}
+
+/* ===================== TABS ===================== */
+document.querySelectorAll('nav.tabs button').forEach(btn=>{
+  btn.addEventListener('click', ()=>{
+    document.querySelectorAll('nav.tabs button').forEach(b=>b.classList.remove('active'));
+    document.querySelectorAll('.tabpanel').forEach(p=>p.classList.remove('active'));
+    btn.classList.add('active');
+    document.getElementById('tab-'+btn.dataset.tab).classList.add('active');
+    if(btn.dataset.tab==='dashboard') renderDashboard();
+    if(btn.dataset.tab==='list') renderList();
+    if(btn.dataset.tab==='stock') renderStock();
+    if(btn.dataset.tab==='form') refreshFormOptions();
+  });
+});
+
+/* ===================== DASHBOARD ===================== */
+function isSameDay(ts, dateObj){
+  if(!ts) return false;
+  const d = new Date(ts);
+  return d.getFullYear()===dateObj.getFullYear() && d.getMonth()===dateObj.getMonth() && d.getDate()===dateObj.getDate();
+}
+function renderDashboard(){
+  const now = new Date();
+  const tomorrow = new Date(now); tomorrow.setDate(now.getDate()+1);
+
+  const todayOrders = orders.filter(o=>isSameDay(o.deliverySchedule, now));
+  const tomorrowOrders = orders.filter(o=>isSameDay(o.deliverySchedule, tomorrow));
+  const placedTodayOrders = orders.filter(o=>isSameDay(o.orderDate, now));
+
+  document.getElementById('dashCountToday').textContent = todayOrders.length;
+  document.getElementById('dashCountTomorrow').textContent = tomorrowOrders.length;
+
+  let profit = 0;
+  placedTodayOrders.forEach(o=>{
+    o.items.forEach(it=>{
+      const prod = products.find(p=>p.id===it.productId);
+      const modal = prod ? (prod.modal||0) : 0;
+      profit += (it.unitPrice - modal) * it.qty;
+      (it.addons||[]).forEach(a=> profit += a.price * a.qty); // addons assumed no cost tracked
+    });
+  });
+  document.getElementById('dashProfit').textContent = rupiah(profit);
+
+  function listHtml(list){
+    if(list.length===0) return '<div class="empty-note">Belum ada order.</div>';
+    return '<ul class="dash-list">' + list.map(o=>{
+      const items = o.items.map(it=>`${it.qty}× ${it.name}`).join(', ');
+      return `<li><div class="who">${o.customerName}</div><div class="what">${items}</div></li>`;
+    }).join('') + '</ul>';
+  }
+  document.getElementById('dashToday').outerHTML = `<div id="dashToday">${listHtml(todayOrders)}</div>`;
+  document.getElementById('dashTomorrow').outerHTML = `<div id="dashTomorrow">${listHtml(tomorrowOrders)}</div>`;
+}
+
+/* ===================== FORM ORDER ===================== */
+function refreshFormOptions(){
+  document.getElementById('fOrderDateDisplay').textContent = fmtDateTime(Date.now());
+  const chSel = document.getElementById('fChannel');
+  chSel.innerHTML = channels.map(c=>`<option value="${c.id}">${c.name} (${c.type})</option>`).join('');
+  const custSet = new Set(orders.map(o=>o.customerName).filter(Boolean));
+  document.getElementById('customerOptions').innerHTML = [...custSet].map(c=>`<option value="${c}">`).join('');
+  if(!document.getElementById('fDeliveryDate').value) document.getElementById('fDeliveryDate').value = todayStr();
+}
+
+function addItemRow(){
+  rowCounter++;
+  formItems.push({rowId: rowCounter, productId: products[0]?products[0].id:'', qty:1, addonIds:[]});
+  renderItemRows();
+}
+function removeItemRow(rowId){
+  formItems = formItems.filter(r=>r.rowId!==rowId);
+  renderItemRows();
+}
+function currentChannelType(){
+  const chId = document.getElementById('fChannel').value;
+  const ch = channels.find(c=>c.id===chId);
+  return ch ? ch.type : 'Direct';
+}
+function unitPriceFor(prod){
+  const type = currentChannelType();
+  if(!prod) return 0;
+  return type==='Reseller' ? (prod.priceReseller||0) : (prod.priceDirect||0);
+}
+function renderItemRows(){
+  const el = document.getElementById('itemRows');
+  if(formItems.length===0){
+    el.innerHTML = '<p style="font-size:12.5px;color:var(--ink-soft);">Belum ada produk ditambahkan.</p>';
+    recalcFormTotal();
+    return;
+  }
+  el.innerHTML = formItems.map(r=>{
+    const prod = products.find(p=>p.id===r.productId) || products[0];
+    const unitPrice = unitPriceFor(prod);
+    const addonTotal = r.addonIds.reduce((s,aid)=>{ const a = addons.find(x=>x.id===aid); return s + (a?a.price:0); },0);
+    const subtotal = unitPrice*r.qty + addonTotal*r.qty;
+    const options = products.map(p=>`<option value="${p.id}" ${p.id===r.productId?'selected':''}>${p.name}</option>`).join('');
+    const addonChips = addons.map(a=>{
+      const active = r.addonIds.includes(a.id);
+      return `<div class="addon-chip ${active?'active':''}" data-row="${r.rowId}" data-addon="${a.id}">${a.name} ${a.price?'(+'+rupiah(a.price)+')':''}</div>`;
+    }).join('');
+    return `
+      <div class="item-row" data-row="${r.rowId}" style="grid-template-columns:1.5fr 70px 1.3fr 90px 30px;">
+        <select class="itemProduct" data-row="${r.rowId}">${options}</select>
+        <input type="number" min="1" class="itemQty" data-row="${r.rowId}" value="${r.qty}">
+        <div class="addons-box" style="grid-column:3;">${addonChips || '<span style="font-size:11px;color:var(--ink-soft);">tidak ada add-on</span>'}</div>
+        <span class="item-subtotal">${rupiah(subtotal)}</span>
+        <button class="rm-btn" data-row="${r.rowId}" type="button">×</button>
+      </div>
+    `;
+  }).join('');
+
+  el.querySelectorAll('.itemProduct').forEach(sel=>{
+    sel.addEventListener('change', e=>{
+      const row = formItems.find(r=>r.rowId===parseInt(e.target.dataset.row));
+      row.productId = e.target.value;
+      renderItemRows();
+    });
+  });
+  el.querySelectorAll('.itemQty').forEach(inp=>{
+    inp.addEventListener('input', e=>{
+      const row = formItems.find(r=>r.rowId===parseInt(e.target.dataset.row));
+      row.qty = Math.max(1, parseInt(e.target.value)||1);
+      renderItemRows();
+    });
+  });
+  el.querySelectorAll('.addon-chip').forEach(chip=>{
+    chip.addEventListener('click', e=>{
+      const rid = parseInt(chip.dataset.row);
+      const aid = chip.dataset.addon;
+      const row = formItems.find(r=>r.rowId===rid);
+      if(row.addonIds.includes(aid)) row.addonIds = row.addonIds.filter(x=>x!==aid);
+      else row.addonIds.push(aid);
+      renderItemRows();
+    });
+  });
+  el.querySelectorAll('.rm-btn').forEach(btn=>{
+    btn.addEventListener('click', e=>removeItemRow(parseInt(btn.dataset.row)));
+  });
+  recalcFormTotal();
+}
+function recalcFormTotal(){
+  let total = 0;
+  formItems.forEach(r=>{
+    const prod = products.find(p=>p.id===r.productId);
+    const unitPrice = unitPriceFor(prod);
+    const addonTotal = r.addonIds.reduce((s,aid)=>{ const a = addons.find(x=>x.id===aid); return s + (a?a.price:0); },0);
+    total += unitPrice*r.qty + addonTotal*r.qty;
+  });
+  document.getElementById('formTotal').textContent = rupiah(total);
+}
+document.getElementById('fChannel').addEventListener('change', ()=>{ renderItemRows(); });
+
+function resetForm(){
+  document.getElementById('savedBox').classList.add('hidden');
+  document.getElementById('fCustomer').value='';
+  document.getElementById('fStatus').value='Confirmed';
+  document.getElementById('fDeliveryDate').value = todayStr();
+  document.getElementById('fDeliveryTime').value = '';
+  document.getElementById('fNotes').value='';
+  formItems = [];
+  addItemRow();
+  refreshFormOptions();
+}
+
+async function saveOrder(){
+  const name = document.getElementById('fCustomer').value.trim();
+  if(!name){ showToast('Isi nama customer dulu ya.'); return; }
+  if(formItems.length===0){ showToast('Tambahkan minimal 1 produk.'); return; }
+
+  const chId = document.getElementById('fChannel').value;
+  const ch = channels.find(c=>c.id===chId);
+  const dDate = document.getElementById('fDeliveryDate').value;
+  const dTime = document.getElementById('fDeliveryTime').value || '00:00';
+  const deliverySchedule = dDate ? new Date(dDate+'T'+dTime+':00').getTime() : null;
+
+  let total = 0;
+  const items = formItems.map(r=>{
+    const prod = products.find(p=>p.id===r.productId);
+    const unitPrice = unitPriceFor(prod);
+    const addonList = r.addonIds.map(aid=>{
+      const a = addons.find(x=>x.id===aid);
+      return {addonId:aid, name:a?a.name:aid, price:a?a.price:0, qty:r.qty};
+    });
+    const addonTotal = addonList.reduce((s,a)=>s+a.price*a.qty,0);
+    const subtotal = unitPrice*r.qty + addonTotal;
+    total += subtotal;
+    return {productId:r.productId, name:prod?prod.name:r.productId, qty:r.qty, unitPrice, addons:addonList, subtotal};
+  });
+
+  const order = {
+    id: 'ord_'+Date.now(),
+    customerName: name,
+    orderDate: Date.now(),
+    channelId: chId,
+    channelName: ch?ch.name:'',
+    channelType: ch?ch.type:'Direct',
+    deliverySchedule,
+    items,
+    total,
+    status: document.getElementById('fStatus').value,
+    notes: document.getElementById('fNotes').value.trim()
+  };
+  orders.unshift(order);
+  await saveOrders();
+  lastSavedOrder = order;
+  resetForm();
+  document.getElementById('savedBox').classList.remove('hidden');
+}
+document.getElementById('btnAddItem').addEventListener('click', addItemRow);
+document.getElementById('btnSaveOrder').addEventListener('click', saveOrder);
+document.getElementById('btnResetForm').addEventListener('click', resetForm);
+
+/* ===================== LIST ORDER ===================== */
+function statusBadge(s){
+  const cls = {Confirmed:'badge-confirmed',Paid:'badge-paid',Delivered:'badge-delivered'}[s]||'';
+  return `<span class="badge ${cls}">${s}</span>`;
+}
+function channelBadge(type){
+  return `<span class="badge ${type==='Reseller'?'badge-reseller':'badge-direct'}">${type}</span>`;
+}
+function refreshListChannelFilter(){
+  const sel = document.getElementById('lChannel');
+  const current = sel.value;
+  sel.innerHTML = '<option value="all">Semua Channel</option>' + channels.map(c=>`<option value="${c.id}">${c.name}</option>`).join('');
+  sel.value = current || 'all';
+}
+function renderList(){
+  refreshListChannelFilter();
+  const search = document.getElementById('lSearch').value.trim().toLowerCase();
+  const statusF = document.getElementById('lStatus').value;
+  const channelF = document.getElementById('lChannel').value;
+  const sortF = document.getElementById('lSort').value;
+
+  let filtered = orders.filter(o=>{
+    if(search && !o.customerName.toLowerCase().includes(search)) return false;
+    if(statusF!=='all' && o.status!==statusF) return false;
+    if(channelF!=='all' && o.channelId!==channelF) return false;
+    return true;
+  });
+
+  filtered.sort((a,b)=>{
+    if(sortF==='order_desc') return b.orderDate - a.orderDate;
+    if(sortF==='order_asc') return a.orderDate - b.orderDate;
+    if(sortF==='delivery_asc') return (a.deliverySchedule||Infinity) - (b.deliverySchedule||Infinity);
+    if(sortF==='total_desc') return b.total - a.total;
+    if(sortF==='total_asc') return a.total - b.total;
+    return 0;
+  });
+
+  const body = document.getElementById('listBody');
+  if(filtered.length===0){
+    body.innerHTML = `<tr><td colspan="9" class="empty-note">Belum ada order yang cocok.</td></tr>`;
+    return;
+  }
+  body.innerHTML = filtered.map(o=>{
+    const produk = o.items.map(it=>{
+      const ad = (it.addons&&it.addons.length) ? ' +'+it.addons.map(a=>a.name).join('+') : '';
+      return `${it.qty}× ${it.name}${ad}`;
+    }).join('<br>');
+    return `
+      <tr>
+        <td>${fmtDate(o.orderDate)}</td>
+        <td>${o.customerName}</td>
+        <td>${produk}</td>
+        <td>${o.channelName} ${channelBadge(o.channelType)}</td>
+        <td>${fmtDateTime(o.deliverySchedule)}</td>
+        <td>${rupiah(o.total)}</td>
+        <td>
+          <select class="status-select" data-id="${o.id}">
+            <option value="Confirmed" ${o.status==='Confirmed'?'selected':''}>Confirmed</option>
+            <option value="Paid" ${o.status==='Paid'?'selected':''}>Paid</option>
+            <option value="Delivered" ${o.status==='Delivered'?'selected':''}>Delivered</option>
+          </select>
+        </td>
+        <td>${o.notes || '-'}</td>
+        <td><button class="btn-secondary btn-sm" data-struk="${o.id}">🧾 Struk</button></td>
+        <td><button class="btn-danger" data-id="${o.id}">Hapus</button></td>
+      </tr>
+    `;
+  }).join('');
+
+  body.querySelectorAll('[data-struk]').forEach(btn=>{
+    btn.addEventListener('click', e=>{
+      const o = orders.find(x=>x.id===btn.dataset.struk);
+      if(o) showReceipt(o);
+    });
+  });
+
+  body.querySelectorAll('.status-select').forEach(sel=>{
+    sel.addEventListener('change', async e=>{
+      const o = orders.find(x=>x.id===e.target.dataset.id);
+      o.status = e.target.value;
+      await saveOrders();
+      renderList();
+    });
+  });
+  body.querySelectorAll('.btn-danger').forEach(btn=>{
+    btn.addEventListener('click', async e=>{
+      if(!(await askConfirm('Hapus order ini?'))) return;
+      await deleteRemote('orders', btn.dataset.id);
+      orders = orders.filter(o=>o.id!==btn.dataset.id);
+      renderList();
+      renderDashboard();
+    });
+  });
+}
+document.getElementById('lSearch').addEventListener('input', renderList);
+document.getElementById('lStatus').addEventListener('change', renderList);
+document.getElementById('lChannel').addEventListener('change', renderList);
+document.getElementById('lSort').addEventListener('change', renderList);
+
+/* ===================== BELANJA STOK ===================== */
+function renderStock(){
+  document.getElementById('sTanggal').value = document.getElementById('sTanggal').value || todayStr();
+  const body = document.getElementById('stockBody');
+  const sorted = [...stock].sort((a,b)=>b.tanggal - a.tanggal);
+  if(sorted.length===0){
+    body.innerHTML = `<tr><td colspan="4" class="empty-note">Belum ada belanja stok.</td></tr>`;
+  }else{
+    body.innerHTML = sorted.map(s=>`
+      <tr>
+        <td>${s.item}</td>
+        <td>${rupiah(s.harga)}</td>
+        <td>${fmtDate(s.tanggal)}</td>
+        <td><button class="btn-danger" data-id="${s.id}">Hapus</button></td>
+      </tr>
+    `).join('');
+    body.querySelectorAll('.btn-danger').forEach(btn=>{
+      btn.addEventListener('click', async e=>{
+        if(!(await askConfirm('Hapus item belanja ini?'))) return;
+        await deleteRemote('stock', btn.dataset.id);
+        stock = stock.filter(s=>s.id!==btn.dataset.id);
+        renderStock();
+      });
+    });
+  }
+  const total = stock.reduce((s,x)=>s+x.harga,0);
+  document.getElementById('stockTotal').textContent = rupiah(total);
+}
+document.getElementById('btnAddStock').addEventListener('click', async ()=>{
+  const item = document.getElementById('sItem').value.trim();
+  const harga = parseInt(document.getElementById('sHarga').value)||0;
+  const tanggalStr = document.getElementById('sTanggal').value || todayStr();
+  if(!item){ showToast('Isi nama item dulu ya.'); return; }
+  stock.unshift({id:'stk_'+Date.now(), item, harga, tanggal:new Date(tanggalStr+'T00:00:00').getTime()});
+  await saveStock();
+  document.getElementById('sItem').value='';
+  document.getElementById('sHarga').value='';
+  renderStock();
+});
+
+/* ===================== SETTINGS ===================== */
+function renderProductSettings(){
+  document.getElementById('productSettings').innerHTML = products.map(p=>`
+    <div class="settings-row">
+      <span class="name">${p.name}</span>
+      <input type="number" class="pDirect" data-id="${p.id}" value="${p.priceDirect||''}" placeholder="0">
+      <input type="number" class="pReseller" data-id="${p.id}" value="${p.priceReseller||''}" placeholder="0">
+      <input type="number" class="pModal" data-id="${p.id}" value="${p.modal||''}" placeholder="0">
+      <span></span>
+    </div>
+  `).join('');
+  function bind(cls, field){
+    document.querySelectorAll('.'+cls).forEach(inp=>{
+      inp.addEventListener('change', async e=>{
+        const prod = products.find(p=>p.id===e.target.dataset.id);
+        prod[field] = parseInt(e.target.value)||0;
+        await saveProducts();
+      });
+    });
+  }
+  bind('pDirect','priceDirect'); bind('pReseller','priceReseller'); bind('pModal','modal');
+}
+
+function renderAddonSettings(){
+  document.getElementById('addonSettings').innerHTML = addons.map(a=>`
+    <div class="settings-row addon-row">
+      <input type="text" class="aName" data-id="${a.id}" value="${a.name}">
+      <input type="number" class="aPrice" data-id="${a.id}" value="${a.price||''}" placeholder="0">
+      <button class="rm-btn" data-id="${a.id}" type="button">×</button>
+    </div>
+  `).join('') || '<p class="empty-note">Belum ada add-on.</p>';
+  document.querySelectorAll('.aName').forEach(inp=>{
+    inp.addEventListener('change', async e=>{
+      const a = addons.find(x=>x.id===e.target.dataset.id);
+      a.name = e.target.value.trim();
+      await saveAddons(); renderItemRows();
+    });
+  });
+  document.querySelectorAll('.aPrice').forEach(inp=>{
+    inp.addEventListener('change', async e=>{
+      const a = addons.find(x=>x.id===e.target.dataset.id);
+      a.price = parseInt(e.target.value)||0;
+      await saveAddons(); renderItemRows();
+    });
+  });
+  document.querySelectorAll('#addonSettings .rm-btn').forEach(btn=>{
+    btn.addEventListener('click', async e=>{
+      if(!(await askConfirm('Hapus add-on ini?'))) return;
+      await deleteRemote('addons', btn.dataset.id);
+      addons = addons.filter(a=>a.id!==btn.dataset.id);
+      renderAddonSettings(); renderItemRows();
+    });
+  });
+}
+document.getElementById('btnAddAddon').addEventListener('click', async ()=>{
+  addons.push({id:'addon-'+Date.now(), name:'Add-On Baru', price:0});
+  await saveAddons(); renderAddonSettings();
+});
+
+function renderChannelSettings(){
+  document.getElementById('channelSettings').innerHTML = channels.map(c=>`
+    <div class="settings-row channel-row">
+      <input type="text" class="cName" data-id="${c.id}" value="${c.name}">
+      <select class="cType" data-id="${c.id}">
+        <option value="Direct" ${c.type==='Direct'?'selected':''}>Direct</option>
+        <option value="Reseller" ${c.type==='Reseller'?'selected':''}>Reseller</option>
+      </select>
+      <button class="rm-btn" data-id="${c.id}" type="button">×</button>
+    </div>
+  `).join('') || '<p class="empty-note">Belum ada channel.</p>';
+  document.querySelectorAll('.cName').forEach(inp=>{
+    inp.addEventListener('change', async e=>{
+      const c = channels.find(x=>x.id===e.target.dataset.id);
+      c.name = e.target.value.trim();
+      await saveChannels(); refreshFormOptions();
+    });
+  });
+  document.querySelectorAll('.cType').forEach(sel=>{
+    sel.addEventListener('change', async e=>{
+      const c = channels.find(x=>x.id===e.target.dataset.id);
+      c.type = e.target.value;
+      await saveChannels(); refreshFormOptions();
+    });
+  });
+  document.querySelectorAll('#channelSettings .rm-btn').forEach(btn=>{
+    btn.addEventListener('click', async e=>{
+      if(!(await askConfirm('Hapus channel ini?'))) return;
+      await deleteRemote('channels', btn.dataset.id);
+      channels = channels.filter(c=>c.id!==btn.dataset.id);
+      renderChannelSettings(); refreshFormOptions();
+    });
+  });
+}
+document.getElementById('btnAddChannel').addEventListener('click', async ()=>{
+  channels.push({id:'ch-'+Date.now(), name:'Channel Baru', type:'Direct'});
+  await saveChannels(); renderChannelSettings();
+});
+
+/* ===================== STRUK / RECEIPT ===================== */
+function showReceipt(order){
+  const itemsHtml = order.items.map(it=>{
+    const addonsHtml = (it.addons||[]).filter(a=>a.qty>0).map(a=>`<span class="r-addon">+ ${a.name} (${rupiah(a.price)})</span>`).join('');
+    return `
+      <div class="r-item">
+        <div class="r-row"><span class="r-name">${it.qty}× ${it.name}</span><span>${rupiah(it.subtotal)}</span></div>
+        ${addonsHtml}
+      </div>
+    `;
+  }).join('');
+  document.getElementById('receiptPaper').innerHTML = `
+    <div class="r-shop">DAPUR PARTO</div>
+    <div class="r-tagline">matcha · kopi gula aren · roasted milk tea</div>
+    <hr>
+    <div class="r-row"><span>No. Order</span><span>${order.id.slice(-8)}</span></div>
+    <div class="r-row"><span>Tanggal</span><span>${fmtDateTime(order.orderDate)}</span></div>
+    <div class="r-row"><span>Customer</span><span>${order.customerName}</span></div>
+    <div class="r-row"><span>Channel</span><span>${order.channelName}</span></div>
+    ${order.deliverySchedule ? `<div class="r-row"><span>Jadwal Antar</span><span>${fmtDateTime(order.deliverySchedule)}</span></div>` : ''}
+    <hr>
+    ${itemsHtml}
+    <hr>
+    <div class="r-row r-total"><span>TOTAL</span><span>${rupiah(order.total)}</span></div>
+    <div class="r-row" style="margin-top:6px;"><span>Status</span><span>${order.status}</span></div>
+    ${order.notes ? `<div class="r-row"><span>Notes</span><span>${order.notes}</span></div>` : ''}
+    <div class="r-footer">Terima kasih sudah order di Dapur Parto! 🍵</div>
+  `;
+  document.getElementById('receiptOverlay').classList.add('show');
+}
+document.getElementById('btnCloseReceipt').addEventListener('click', ()=>{
+  document.getElementById('receiptOverlay').classList.remove('show');
+});
+document.getElementById('btnDoPrint').addEventListener('click', ()=>{ window.print(); });
+
+let lastSavedOrder = null;
+document.getElementById('btnPrintLastOrder').addEventListener('click', ()=>{
+  if(lastSavedOrder) showReceipt(lastSavedOrder);
+});
+
+/* ===================== INIT ===================== */
+(async function init(){
+  await loadAll();
+  if(!products || products.length===0){ products = DEFAULT_PRODUCTS; await saveProducts(); }
+  if(!addons){ addons = DEFAULT_ADDONS; await saveAddons(); }
+  if(!channels || channels.length===0){ channels = DEFAULT_CHANNELS; await saveChannels(); }
+
+  renderDashboard();
+  renderProductSettings();
+  renderAddonSettings();
+  renderChannelSettings();
+  resetForm();
+  renderList();
+  renderStock();
+})();
+</script>
+</body>
+</html>
