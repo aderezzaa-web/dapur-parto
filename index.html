@@ -391,6 +391,7 @@
         <span class="col-label">Produk</span><span class="col-label">Direct</span><span class="col-label">Reseller</span><span class="col-label">Modal</span><span></span>
       </div>
       <div id="productSettings"></div>
+      <button class="btn-ghost" id="btnAddProduct" type="button">+ Tambah Produk</button>
     </div>
 
     <div class="panel settings-section">
@@ -969,24 +970,40 @@ document.getElementById('btnAddStock').addEventListener('click', async ()=>{
 function renderProductSettings(){
   document.getElementById('productSettings').innerHTML = products.map(p=>`
     <div class="settings-row">
-      <span class="name">${p.name}</span>
+      <input type="text" class="pName" data-id="${p.id}" value="${p.name}">
       <input type="number" class="pDirect" data-id="${p.id}" value="${p.priceDirect||''}" placeholder="0">
       <input type="number" class="pReseller" data-id="${p.id}" value="${p.priceReseller||''}" placeholder="0">
       <input type="number" class="pModal" data-id="${p.id}" value="${p.modal||''}" placeholder="0">
-      <span></span>
+      <button class="rm-btn" data-id="${p.id}" type="button">×</button>
     </div>
-  `).join('');
-  function bind(cls, field){
+  `).join('') || '<p class="empty-note">Belum ada produk.</p>';
+  function bind(cls, field, isText){
     document.querySelectorAll('.'+cls).forEach(inp=>{
       inp.addEventListener('change', async e=>{
         const prod = products.find(p=>p.id===e.target.dataset.id);
-        prod[field] = parseInt(e.target.value)||0;
+        prod[field] = isText ? e.target.value.trim() : (parseInt(e.target.value)||0);
         await saveProducts();
+        if(!isText){ renderItemRows(); }
       });
     });
   }
-  bind('pDirect','priceDirect'); bind('pReseller','priceReseller'); bind('pModal','modal');
+  bind('pName','name',true); bind('pDirect','priceDirect'); bind('pReseller','priceReseller'); bind('pModal','modal');
+  document.querySelectorAll('#productSettings .rm-btn').forEach(btn=>{
+    btn.addEventListener('click', async e=>{
+      if(!(await askConfirm('Hapus produk ini? Order lama yang sudah pakai produk ini nggak akan ikut terhapus.'))) return;
+      await deleteRemote('products', btn.dataset.id);
+      products = products.filter(p=>p.id!==btn.dataset.id);
+      renderProductSettings();
+      renderItemRows();
+    });
+  });
 }
+document.getElementById('btnAddProduct').addEventListener('click', async ()=>{
+  products.push({id:'prod-'+Date.now(), name:'Produk Baru', priceDirect:0, priceReseller:0, modal:0});
+  await saveProducts();
+  renderProductSettings();
+  renderItemRows();
+});
 
 function renderAddonSettings(){
   document.getElementById('addonSettings').innerHTML = addons.map(a=>`
