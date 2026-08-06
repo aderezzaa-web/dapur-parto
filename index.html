@@ -118,11 +118,13 @@
   .btn-ghost:hover{background:var(--primary-soft);}
   .btn-sm{font-size:12px;padding:5px 10px;}
 
-  .item-row{
-    display:grid;grid-template-columns:1.5fr 70px 1.3fr 90px 30px;gap:8px;align-items:start;
-    margin-bottom:10px;padding-bottom:10px;border-bottom:1px dashed var(--border);
-  }
-  .item-row .addons-box{display:flex;flex-wrap:wrap;gap:6px;padding-top:8px;}
+  .item-row-v2{margin-bottom:12px;padding-bottom:12px;border-bottom:1px dashed var(--border);}
+  .item-row-top{display:grid;grid-template-columns:1.5fr 60px 100px 26px;gap:8px;align-items:center;margin-bottom:8px;}
+  .item-row-top select, .item-row-top input{padding:8px 9px;border:1px solid var(--border);border-radius:var(--radius);font-family:'Inter',sans-serif;font-size:13px;background:#fff;color:var(--ink);}
+  .item-subtotal{font-family:'IBM Plex Mono',monospace;font-size:12px;text-align:right;color:var(--ink-soft);}
+  .item-row-bottom{display:flex;flex-wrap:wrap;gap:8px;align-items:center;}
+  .itemSugar{width:auto;min-width:130px;padding:6px 8px;border:1px solid var(--border);border-radius:14px;font-size:11.5px;background:#FBF6EC;color:var(--ink);font-family:'Inter',sans-serif;}
+  .addons-box{display:flex;flex-wrap:wrap;gap:6px;}
   .addon-chip{
     display:flex;align-items:center;gap:5px;border:1px solid var(--border);border-radius:14px;
     padding:4px 10px;font-size:11.5px;background:#fff;cursor:pointer;user-select:none;
@@ -222,8 +224,20 @@
   .dp-section-title-row h2{font-family:'Baloo 2',sans-serif;font-size:19px;font-weight:800;margin:0;color:var(--brown-ink);}
   .dp-pill{
     border:1.5px solid var(--brown-ink);border-radius:20px;padding:5px 12px;font-size:12px;font-weight:600;
-    display:flex;align-items:center;gap:3px;color:var(--brown-ink);
+    display:flex;align-items:center;gap:3px;color:var(--brown-ink);background:none;cursor:pointer;font-family:'Inter',sans-serif;
   }
+  .dp-date-popover{
+    position:absolute;right:0;top:calc(100% + 6px);background:#fff;border-radius:12px;
+    box-shadow:0 8px 24px rgba(46,36,22,0.18);padding:10px;z-index:60;width:230px;
+  }
+  .dp-date-popover.hidden{display:none;}
+  .dp-date-opt{
+    display:block;width:100%;text-align:left;background:none;border:none;padding:9px 10px;border-radius:8px;
+    font-family:'Inter',sans-serif;font-size:13px;font-weight:600;color:var(--brown-ink);cursor:pointer;
+  }
+  .dp-date-opt:hover, .dp-date-opt.active{background:var(--cream);}
+  .dp-date-range-row{border-top:1px solid var(--border);margin-top:6px;padding-top:8px;display:flex;flex-direction:column;gap:6px;}
+  .dp-date-range-row input{padding:6px 8px;border:1px solid var(--border);border-radius:6px;font-size:12px;font-family:'Inter',sans-serif;}
 
   .dp-revenue-card{
     background:var(--tan);border-radius:14px;padding:15px 16px;display:flex;align-items:center;gap:12px;
@@ -267,15 +281,16 @@
     padding:22px 20px;border-radius:4px;font-family:'IBM Plex Mono',monospace;
     font-size:12.5px;line-height:1.6;
   }
-  #receiptPaper .r-shop{text-align:center;font-weight:700;font-size:16px;margin-bottom:2px;letter-spacing:1px;}
-  #receiptPaper .r-tagline{text-align:center;font-size:10.5px;color:#666;margin-bottom:12px;}
-  #receiptPaper hr{border:none;border-top:1px dashed #999;margin:10px 0;}
-  #receiptPaper .r-row{display:flex;justify-content:space-between;gap:10px;}
-  #receiptPaper .r-item{margin-bottom:4px;}
+  #receiptPaper .r-shop{text-align:center;font-weight:700;font-size:17px;margin-bottom:6px;letter-spacing:4px;}
+  #receiptPaper .r-tagline{text-align:center;font-size:11px;margin-bottom:6px;}
+  #receiptPaper .r-address{text-align:center;font-size:10.5px;color:#999;margin-bottom:4px;}
+  #receiptPaper hr{border:none;border-top:1px dashed #bbb;margin:12px 0;}
+  #receiptPaper .r-row{display:flex;justify-content:space-between;gap:10px;padding:1px 0;}
+  #receiptPaper .r-item{margin-bottom:6px;}
   #receiptPaper .r-item .r-name{display:block;}
-  #receiptPaper .r-item .r-addon{display:block;font-size:11px;color:#666;padding-left:8px;}
-  #receiptPaper .r-total{font-weight:700;font-size:14px;}
-  #receiptPaper .r-footer{text-align:center;margin-top:14px;font-size:11px;color:#666;}
+  #receiptPaper .r-item .r-addon{display:block;font-size:11.5px;color:#888;padding-left:10px;}
+  #receiptPaper .r-total{font-weight:700;font-size:16px;padding-top:2px;}
+  #receiptPaper .r-footer{text-align:center;margin-top:16px;font-size:11px;color:#999;line-height:1.5;}
 
   @media print{
     body *{visibility:hidden;}
@@ -331,16 +346,26 @@
       </div>
 
       <div class="dp-body">
-        <div class="dp-section-title-row">
+        <div class="dp-section-title-row" style="position:relative;">
           <h2>Dashboard</h2>
-          <div class="dp-pill">Today <span>›</span></div>
+          <button class="dp-pill" id="dpDateFilterBtn" type="button">Today <span>›</span></button>
+          <div class="dp-date-popover hidden" id="dpDatePopover">
+            <button class="dp-date-opt" data-mode="today" type="button">Today</button>
+            <button class="dp-date-opt" data-mode="yesterday" type="button">Kemarin</button>
+            <div class="dp-date-range-row">
+              <label style="font-size:10.5px;color:var(--ink-soft);text-transform:none;font-weight:600;">Custom range</label>
+              <input type="date" id="dpRangeStart">
+              <input type="date" id="dpRangeEnd">
+              <button class="btn btn-primary btn-sm" id="dpRangeApply" type="button">Terapkan</button>
+            </div>
+          </div>
         </div>
 
         <div class="dp-revenue-card">
           <span class="dp-revenue-icon">🏪</span>
           <div>
             <div class="dp-revenue-amount" id="dashRevenue">Rp 0</div>
-            <div class="dp-revenue-label">Revenue Today</div>
+            <div class="dp-revenue-label" id="dashRevenueLabel">Keuntungan Hari Ini</div>
           </div>
         </div>
 
@@ -543,10 +568,28 @@
     </div>
 
     <div class="panel settings-section">
+      <h2>Sugar Level</h2>
+      <p class="desc">Pilihan tingkat gula per item (pilihan tunggal, biasanya harga Rp0, tapi bisa dikasih harga kalau mau).</p>
+      <div id="sugarSettings"></div>
+      <button class="btn-ghost" id="btnAddSugar" type="button">+ Tambah Sugar Level</button>
+    </div>
+
+    <div class="panel settings-section">
       <h2>Channel</h2>
       <p class="desc">Tentukan channel penjualan dan tipe harganya (Direct / Reseller).</p>
       <div id="channelSettings"></div>
       <button class="btn-ghost" id="btnAddChannel" type="button">+ Tambah Channel</button>
+    </div>
+
+    <div class="panel settings-section">
+      <h2>Info Toko</h2>
+      <p class="desc">Dipakai buat header & footer struk.</p>
+      <div class="form-row"><label>Nama Toko</label><input type="text" id="siName"></div>
+      <div class="form-row"><label>Tagline</label><input type="text" id="siTagline"></div>
+      <div class="form-row"><label>Alamat</label><input type="text" id="siAddress"></div>
+      <div class="form-row"><label>Social Media Handle</label><input type="text" id="siSocial" placeholder="@dapurparto"></div>
+      <div class="form-row"><label>Pesan Footer Struk</label><textarea id="siFooter" rows="2"></textarea></div>
+      <button class="btn btn-primary btn-sm" id="btnSaveShopInfo" type="button">Simpan Info Toko</button>
     </div>
   </div>
 </div>
@@ -571,6 +614,10 @@ const toOrderRow = o => ({id:o.id, customer_name:o.customerName, order_date:o.or
 const fromOrderRow = r => ({id:r.id, customerName:r.customer_name, orderDate:r.order_date, channelId:r.channel_id, channelName:r.channel_name, channelType:r.channel_type, deliverySchedule:r.delivery_schedule, items:r.items, subtotal:r.subtotal||0, ongkir:r.ongkir||0, total:r.total, status:r.status, notes:r.notes});
 const toStockRow = s => ({id:s.id, item:s.item, harga:s.harga, tanggal:s.tanggal});
 const fromStockRow = r => ({id:r.id, item:r.item, harga:r.harga, tanggal:r.tanggal});
+const toSugarRow = s => ({id:s.id, name:s.name, price:s.price||0});
+const fromSugarRow = r => ({id:r.id, name:r.name, price:r.price||0});
+const fromShopInfoRow = r => ({name:r.name||'', tagline:r.tagline||'', address:r.address||'', social:r.social||'', footerMsg:r.footer_msg||''});
+const toShopInfoRow = s => ({id:'main', name:s.name, tagline:s.tagline, address:s.address, social:s.social, footer_msg:s.footerMsg});
 
 /* ===================== DATA & STORAGE ===================== */
 const DEFAULT_PRODUCTS = [
@@ -594,9 +641,23 @@ const DEFAULT_CHANNELS = [
   {id:'ch-putri', name:'Reseller Putri', type:'Reseller'},
   {id:'ch-ibu', name:'Reseller Ibu', type:'Reseller'},
 ];
+const DEFAULT_SUGAR_LEVELS = [
+  {id:'sl-normal', name:'Normal Sugar', price:0},
+  {id:'sl-less', name:'Less Sugar', price:0},
+  {id:'sl-extra', name:'Extra Sugar', price:0},
+  {id:'sl-no', name:'No Sugar', price:0},
+];
+const DEFAULT_SHOP_INFO = {
+  name:'DAPUR PARTO',
+  tagline:'Roasted Milk Tea • Matcha • Coffee',
+  address:'',
+  social:'',
+  footerMsg:'Terimakasih sudah order di Dapur Parto\nSemoga hari-mu menyenangkan'
+};
 
-let products = [], addons = [], channels = [], orders = [], stock = [];
-let formItems = []; // {rowId, productId, qty, addonIds:[]}
+let products = [], addons = [], channels = [], orders = [], stock = [], sugarLevels = [];
+let shopInfo = {...DEFAULT_SHOP_INFO};
+let formItems = []; // {rowId, productId, qty, addonIds:[], sugarLevelId}
 let rowCounter = 0;
 
 function rupiah(n){ return 'Rp ' + Math.round(n||0).toLocaleString('id-ID'); }
@@ -612,12 +673,14 @@ function fmtDateTime(ts){
 }
 
 async function loadAll(){
-  const [pRes, aRes, cRes, oRes, sRes] = await Promise.all([
+  const [pRes, aRes, cRes, oRes, sRes, slRes, siRes] = await Promise.all([
     sb.from('products').select('*'),
     sb.from('addons').select('*'),
     sb.from('channels').select('*'),
     sb.from('orders').select('*').order('order_date', {ascending:false}),
     sb.from('stock').select('*').order('tanggal', {ascending:false}),
+    sb.from('sugar_levels').select('*'),
+    sb.from('shop_info').select('*').eq('id','main').maybeSingle(),
   ]);
   const errs = [];
   function logErr(label, err){
@@ -631,6 +694,8 @@ async function loadAll(){
   logErr('channels', cRes.error);
   logErr('orders', oRes.error);
   logErr('stock', sRes.error);
+  logErr('sugar_levels', slRes.error);
+  logErr('shop_info', siRes.error);
   if(errs.length) showToast('Gagal load dari server — '+errs.join(' | '));
 
   products = (pRes.data && pRes.data.length) ? pRes.data.map(fromProductRow) : DEFAULT_PRODUCTS;
@@ -638,6 +703,8 @@ async function loadAll(){
   channels = (cRes.data && cRes.data.length) ? cRes.data.map(fromChannelRow) : DEFAULT_CHANNELS;
   orders = (oRes.data || []).map(fromOrderRow);
   stock = (sRes.data || []).map(fromStockRow);
+  sugarLevels = (slRes.data && slRes.data.length) ? slRes.data.map(fromSugarRow) : DEFAULT_SUGAR_LEVELS;
+  shopInfo = siRes.data ? fromShopInfoRow(siRes.data) : {...DEFAULT_SHOP_INFO};
 }
 async function saveProducts(){
   const { error } = await sb.from('products').upsert(products.map(toProductRow));
@@ -650,6 +717,14 @@ async function saveAddons(){
 async function saveChannels(){
   const { error } = await sb.from('channels').upsert(channels.map(toChannelRow));
   if(error){ try{console.error('saveChannels error:', error.message);}catch(e){} showToast('Gagal simpan ke server: '+error.message); }
+}
+async function saveSugarLevels(){
+  const { error } = await sb.from('sugar_levels').upsert(sugarLevels.map(toSugarRow));
+  if(error){ try{console.error('saveSugarLevels error:', error.message);}catch(e){} showToast('Gagal simpan ke server: '+error.message); }
+}
+async function saveShopInfo(){
+  const { error } = await sb.from('shop_info').upsert(toShopInfoRow(shopInfo));
+  if(error){ try{console.error('saveShopInfo error:', error.message);}catch(e){} showToast('Gagal simpan ke server: '+error.message); }
 }
 async function saveOrders(){
   const { error } = await sb.from('orders').upsert(orders.map(toOrderRow));
@@ -723,19 +798,60 @@ function relativeDeliveryLabel(ts){
   return d.toLocaleDateString('id-ID',{day:'2-digit',month:'short'}) + ', ' + timeStr;
 }
 
-function renderDashboard(){
+let dashFilter = {mode:'today', start:null, end:null};
+
+function startOfDay(d){ const x=new Date(d); x.setHours(0,0,0,0); return x; }
+function endOfDay(d){ const x=new Date(d); x.setHours(23,59,59,999); return x; }
+
+function getDashRange(){
   const now = new Date();
+  if(dashFilter.mode==='yesterday'){
+    const y = new Date(now); y.setDate(now.getDate()-1);
+    return {start:startOfDay(y), end:endOfDay(y)};
+  }
+  if(dashFilter.mode==='range' && dashFilter.start && dashFilter.end){
+    return {start:startOfDay(new Date(dashFilter.start+'T00:00:00')), end:endOfDay(new Date(dashFilter.end+'T00:00:00'))};
+  }
+  return {start:startOfDay(now), end:endOfDay(now)};
+}
+function inRange(ts, range){
+  if(!ts) return false;
+  return ts >= range.start.getTime() && ts <= range.end.getTime();
+}
+function dashFilterLabel(){
+  if(dashFilter.mode==='yesterday') return 'Kemarin';
+  if(dashFilter.mode==='range' && dashFilter.start && dashFilter.end){
+    const f = s => new Date(s+'T00:00:00').toLocaleDateString('id-ID',{day:'2-digit',month:'short'});
+    return f(dashFilter.start)+' - '+f(dashFilter.end);
+  }
+  return 'Today';
+}
 
-  const deliverToday = orders.filter(o=>isSameDay(o.deliverySchedule, now));
-  const placedToday = orders.filter(o=>isSameDay(o.orderDate, now));
+function renderDashboard(){
+  const range = getDashRange();
+  const label = dashFilterLabel();
+  document.getElementById('dpDateFilterBtn').innerHTML = label+' <span>›</span>';
+  document.getElementById('dashRevenueLabel').textContent = 'Keuntungan — '+label;
 
-  // Revenue Today = total nilai order yang MASUK hari ini
-  const revenue = placedToday.reduce((s,o)=>s+(o.total||0), 0);
-  document.getElementById('dashRevenue').textContent = rupiah(revenue);
+  const deliverInRange = orders.filter(o=>inRange(o.deliverySchedule, range));
+  const placedInRange = orders.filter(o=>inRange(o.orderDate, range));
 
-  // Today Production = rekap qty produk dari order yang jadwal antarnya hari ini
+  // Keuntungan = (harga jual - modal) x qty, untuk order yang MASUK dalam rentang dipilih. Ongkir & add-on/sugar dianggap tanpa modal.
+  let profit = 0;
+  placedInRange.forEach(o=>{
+    o.items.forEach(it=>{
+      const prod = products.find(p=>p.id===it.productId);
+      const modal = prod ? (prod.modal||0) : 0;
+      profit += (it.unitPrice - modal) * it.qty;
+      (it.addons||[]).forEach(a=> profit += a.price * a.qty);
+      if(it.sugarLevel) profit += it.sugarLevel.price * it.qty;
+    });
+  });
+  document.getElementById('dashRevenue').textContent = rupiah(profit);
+
+  // Today Production = rekap qty produk dari order yang jadwal antarnya di rentang dipilih
   const prodTally = {};
-  deliverToday.forEach(o=>{
+  deliverInRange.forEach(o=>{
     o.items.forEach(it=>{
       prodTally[it.name] = (prodTally[it.name]||0) + it.qty;
     });
@@ -743,9 +859,9 @@ function renderDashboard(){
   const prodEntries = Object.entries(prodTally);
   document.getElementById('dashProduction').innerHTML = prodEntries.length ? prodEntries.map(([name,qty])=>`
     <div class="dp-list-row"><span>${name}</span><span class="qty">${qty}</span></div>
-  `).join('') : '<div class="dp-empty">Belum ada order yang perlu diproduksi hari ini.</div>';
+  `).join('') : '<div class="dp-empty">Belum ada order yang perlu diproduksi di rentang ini.</div>';
 
-  // Deliver Today
+  // Deliver
   function orderRowHtml(o, timeLabel){
     const prodLines = o.items.map(it=>`${it.name} x${it.qty}`).join('<br>');
     return `
@@ -757,18 +873,18 @@ function renderDashboard(){
       </div>
     `;
   }
-  document.getElementById('dashDeliverToday').innerHTML = deliverToday.length ? deliverToday.map(o=>{
+  document.getElementById('dashDeliverToday').innerHTML = deliverInRange.length ? deliverInRange.map(o=>{
     const d = o.deliverySchedule ? new Date(o.deliverySchedule) : null;
     const t = d ? d.toLocaleTimeString('id-ID',{hour:'2-digit',minute:'2-digit'}) : '-';
     return orderRowHtml(o, t);
-  }).join('') : '<div class="dp-empty">Nggak ada pengantaran hari ini.</div>';
+  }).join('') : '<div class="dp-empty">Nggak ada pengantaran di rentang ini.</div>';
 
-  // Order Today (order yang DIBUAT hari ini, apapun jadwal antarnya)
-  document.getElementById('dashOrderToday').innerHTML = placedToday.length ? placedToday.map(o=>{
+  // Order (order yang DIBUAT di rentang dipilih, apapun jadwal antarnya)
+  document.getElementById('dashOrderToday').innerHTML = placedInRange.length ? placedInRange.map(o=>{
     return orderRowHtml(o, relativeDeliveryLabel(o.deliverySchedule));
-  }).join('') : '<div class="dp-empty">Belum ada order masuk hari ini.</div>';
+  }).join('') : '<div class="dp-empty">Belum ada order masuk di rentang ini.</div>';
 
-  // Stock — belanja stok terbaru
+  // Stock — belanja stok terbaru (tidak ikut filter tanggal, selalu tampilkan yang terbaru)
   const recentStock = [...stock].sort((a,b)=>b.tanggal-a.tanggal).slice(0,6);
   document.getElementById('dashStock').innerHTML = recentStock.length ? recentStock.map(s=>`
     <div class="dp-list-row"><span>${s.item}</span><span class="qty">${rupiah(s.harga)}</span></div>
@@ -785,6 +901,32 @@ document.getElementById('dpShortcutProduct').addEventListener('click', ()=>{
   document.querySelector('nav.tabs [data-tab="settings"]').click();
 });
 
+document.getElementById('dpDateFilterBtn').addEventListener('click', (e)=>{
+  e.stopPropagation();
+  document.getElementById('dpDatePopover').classList.toggle('hidden');
+});
+document.addEventListener('click', (e)=>{
+  const pop = document.getElementById('dpDatePopover');
+  if(!pop.classList.contains('hidden') && !pop.contains(e.target) && e.target.id!=='dpDateFilterBtn'){
+    pop.classList.add('hidden');
+  }
+});
+document.querySelectorAll('.dp-date-opt').forEach(btn=>{
+  btn.addEventListener('click', ()=>{
+    dashFilter = {mode:btn.dataset.mode, start:null, end:null};
+    document.getElementById('dpDatePopover').classList.add('hidden');
+    renderDashboard();
+  });
+});
+document.getElementById('dpRangeApply').addEventListener('click', ()=>{
+  const start = document.getElementById('dpRangeStart').value;
+  const end = document.getElementById('dpRangeEnd').value;
+  if(!start || !end){ showToast('Isi tanggal mulai dan akhir dulu.'); return; }
+  dashFilter = {mode:'range', start, end};
+  document.getElementById('dpDatePopover').classList.add('hidden');
+  renderDashboard();
+});
+
 /* ===================== FORM ORDER ===================== */
 function refreshFormOptions(){
   document.getElementById('fOrderDateDisplay').textContent = fmtDateTime(Date.now());
@@ -797,7 +939,7 @@ function refreshFormOptions(){
 
 function addItemRow(){
   rowCounter++;
-  formItems.push({rowId: rowCounter, productId: products[0]?products[0].id:'', qty:1, addonIds:[]});
+  formItems.push({rowId: rowCounter, productId: products[0]?products[0].id:'', qty:1, addonIds:[], sugarLevelId: sugarLevels[0]?sugarLevels[0].id:''});
   renderItemRows();
 }
 function removeItemRow(rowId){
@@ -825,19 +967,27 @@ function renderItemRows(){
     const prod = products.find(p=>p.id===r.productId) || products[0];
     const unitPrice = unitPriceFor(prod);
     const addonTotal = r.addonIds.reduce((s,aid)=>{ const a = addons.find(x=>x.id===aid); return s + (a?a.price:0); },0);
-    const subtotal = unitPrice*r.qty + addonTotal*r.qty;
+    const sugar = sugarLevels.find(s=>s.id===r.sugarLevelId);
+    const sugarPrice = sugar ? (sugar.price||0) : 0;
+    const subtotal = (unitPrice + addonTotal + sugarPrice)*r.qty;
     const options = products.map(p=>`<option value="${p.id}" ${p.id===r.productId?'selected':''}>${p.name}</option>`).join('');
+    const sugarOptions = sugarLevels.map(s=>`<option value="${s.id}" ${s.id===r.sugarLevelId?'selected':''}>${s.name}${s.price?' (+'+rupiah(s.price)+')':''}</option>`).join('');
     const addonChips = addons.map(a=>{
       const active = r.addonIds.includes(a.id);
       return `<div class="addon-chip ${active?'active':''}" data-row="${r.rowId}" data-addon="${a.id}">${a.name} ${a.price?'(+'+rupiah(a.price)+')':''}</div>`;
     }).join('');
     return `
-      <div class="item-row" data-row="${r.rowId}" style="grid-template-columns:1.5fr 70px 1.3fr 90px 30px;">
-        <select class="itemProduct" data-row="${r.rowId}">${options}</select>
-        <input type="number" min="1" class="itemQty" data-row="${r.rowId}" value="${r.qty}">
-        <div class="addons-box" style="grid-column:3;">${addonChips || '<span style="font-size:11px;color:var(--ink-soft);">tidak ada add-on</span>'}</div>
-        <span class="item-subtotal">${rupiah(subtotal)}</span>
-        <button class="rm-btn" data-row="${r.rowId}" type="button">×</button>
+      <div class="item-row-v2" data-row="${r.rowId}">
+        <div class="item-row-top">
+          <select class="itemProduct" data-row="${r.rowId}">${options}</select>
+          <input type="number" min="1" class="itemQty" data-row="${r.rowId}" value="${r.qty}">
+          <span class="item-subtotal">${rupiah(subtotal)}</span>
+          <button class="rm-btn" data-row="${r.rowId}" type="button">×</button>
+        </div>
+        <div class="item-row-bottom">
+          <select class="itemSugar" data-row="${r.rowId}">${sugarOptions || '<option value="">-</option>'}</select>
+          <div class="addons-box">${addonChips || '<span style="font-size:11px;color:var(--ink-soft);">tidak ada add-on</span>'}</div>
+        </div>
       </div>
     `;
   }).join('');
@@ -853,6 +1003,13 @@ function renderItemRows(){
     inp.addEventListener('input', e=>{
       const row = formItems.find(r=>r.rowId===parseInt(e.target.dataset.row));
       row.qty = Math.max(1, parseInt(e.target.value)||1);
+      renderItemRows();
+    });
+  });
+  el.querySelectorAll('.itemSugar').forEach(sel=>{
+    sel.addEventListener('change', e=>{
+      const row = formItems.find(r=>r.rowId===parseInt(e.target.dataset.row));
+      row.sugarLevelId = e.target.value;
       renderItemRows();
     });
   });
@@ -877,7 +1034,9 @@ function recalcFormTotal(){
     const prod = products.find(p=>p.id===r.productId);
     const unitPrice = unitPriceFor(prod);
     const addonTotal = r.addonIds.reduce((s,aid)=>{ const a = addons.find(x=>x.id===aid); return s + (a?a.price:0); },0);
-    subtotal += unitPrice*r.qty + addonTotal*r.qty;
+    const sugar = sugarLevels.find(s=>s.id===r.sugarLevelId);
+    const sugarPrice = sugar ? (sugar.price||0) : 0;
+    subtotal += (unitPrice + addonTotal + sugarPrice)*r.qty;
   });
   const ongkir = parseInt(document.getElementById('fOngkir').value)||0;
   document.getElementById('formSubtotal').textContent = rupiah(subtotal);
@@ -930,7 +1089,7 @@ function editOrder(order){
   document.getElementById('fNotes').value = order.notes||'';
   formItems = order.items.map(it=>{
     rowCounter++;
-    return { rowId: rowCounter, productId: it.productId, qty: it.qty, addonIds: (it.addons||[]).map(a=>a.addonId) };
+    return { rowId: rowCounter, productId: it.productId, qty: it.qty, addonIds: (it.addons||[]).map(a=>a.addonId), sugarLevelId: it.sugarLevel ? it.sugarLevel.sugarLevelId : (sugarLevels[0]?sugarLevels[0].id:'') };
   });
   renderItemRows();
   updateFormModeUI();
@@ -957,10 +1116,13 @@ async function saveOrder(){
       const a = addons.find(x=>x.id===aid);
       return {addonId:aid, name:a?a.name:aid, price:a?a.price:0, qty:r.qty};
     });
+    const sugar = sugarLevels.find(s=>s.id===r.sugarLevelId);
+    const sugarLevel = sugar ? {sugarLevelId:sugar.id, name:sugar.name, price:sugar.price||0} : null;
     const addonTotal = addonList.reduce((s,a)=>s+a.price*a.qty,0);
-    const itemSubtotal = unitPrice*r.qty + addonTotal;
+    const sugarTotal = sugarLevel ? sugarLevel.price*r.qty : 0;
+    const itemSubtotal = unitPrice*r.qty + addonTotal + sugarTotal;
     subtotal += itemSubtotal;
-    return {productId:r.productId, name:prod?prod.name:r.productId, qty:r.qty, unitPrice, addons:addonList, subtotal:itemSubtotal};
+    return {productId:r.productId, name:prod?prod.name:r.productId, qty:r.qty, unitPrice, addons:addonList, sugarLevel, subtotal:itemSubtotal};
   });
   const total = subtotal + ongkir;
 
@@ -1222,6 +1384,61 @@ document.getElementById('btnAddAddon').addEventListener('click', async ()=>{
   await saveAddons(); renderAddonSettings();
 });
 
+function renderSugarSettings(){
+  document.getElementById('sugarSettings').innerHTML = sugarLevels.map(s=>`
+    <div class="settings-row addon-row">
+      <input type="text" class="sgName" data-id="${s.id}" value="${s.name}">
+      <input type="number" class="sgPrice" data-id="${s.id}" value="${s.price||''}" placeholder="0">
+      <button class="rm-btn" data-id="${s.id}" type="button">×</button>
+    </div>
+  `).join('') || '<p class="empty-note">Belum ada sugar level.</p>';
+  document.querySelectorAll('.sgName').forEach(inp=>{
+    inp.addEventListener('change', async e=>{
+      const s = sugarLevels.find(x=>x.id===e.target.dataset.id);
+      s.name = e.target.value.trim();
+      await saveSugarLevels(); renderItemRows();
+    });
+  });
+  document.querySelectorAll('.sgPrice').forEach(inp=>{
+    inp.addEventListener('change', async e=>{
+      const s = sugarLevels.find(x=>x.id===e.target.dataset.id);
+      s.price = parseInt(e.target.value)||0;
+      await saveSugarLevels(); renderItemRows();
+    });
+  });
+  document.querySelectorAll('#sugarSettings .rm-btn').forEach(btn=>{
+    btn.addEventListener('click', async e=>{
+      if(!(await askConfirm('Hapus sugar level ini?'))) return;
+      await deleteRemote('sugar_levels', btn.dataset.id);
+      sugarLevels = sugarLevels.filter(s=>s.id!==btn.dataset.id);
+      renderSugarSettings(); renderItemRows();
+    });
+  });
+}
+document.getElementById('btnAddSugar').addEventListener('click', async ()=>{
+  sugarLevels.push({id:'sl-'+Date.now(), name:'Level Baru', price:0});
+  await saveSugarLevels(); renderSugarSettings();
+});
+
+function renderShopInfoForm(){
+  document.getElementById('siName').value = shopInfo.name||'';
+  document.getElementById('siTagline').value = shopInfo.tagline||'';
+  document.getElementById('siAddress').value = shopInfo.address||'';
+  document.getElementById('siSocial').value = shopInfo.social||'';
+  document.getElementById('siFooter').value = shopInfo.footerMsg||'';
+}
+document.getElementById('btnSaveShopInfo').addEventListener('click', async ()=>{
+  shopInfo = {
+    name: document.getElementById('siName').value.trim(),
+    tagline: document.getElementById('siTagline').value.trim(),
+    address: document.getElementById('siAddress').value.trim(),
+    social: document.getElementById('siSocial').value.trim(),
+    footerMsg: document.getElementById('siFooter').value
+  };
+  await saveShopInfo();
+  showToast('Info toko tersimpan.');
+});
+
 function renderChannelSettings(){
   document.getElementById('channelSettings').innerHTML = channels.map(c=>`
     <div class="settings-row channel-row">
@@ -1264,19 +1481,23 @@ document.getElementById('btnAddChannel').addEventListener('click', async ()=>{
 /* ===================== STRUK / RECEIPT ===================== */
 function showReceipt(order){
   const itemsHtml = order.items.map(it=>{
-    const addonsHtml = (it.addons||[]).filter(a=>a.qty>0).map(a=>`<span class="r-addon">+ ${a.name} (${rupiah(a.price)})</span>`).join('');
+    const extraLines = [];
+    if(it.sugarLevel) extraLines.push(`<span class="r-addon">+ ${it.sugarLevel.name} (${rupiah(it.sugarLevel.price)})</span>`);
+    (it.addons||[]).forEach(a=>{ extraLines.push(`<span class="r-addon">+ ${a.name} (${rupiah(a.price)})</span>`); });
     return `
       <div class="r-item">
         <div class="r-row"><span class="r-name">${it.qty}× ${it.name}</span><span>${rupiah(it.subtotal)}</span></div>
-        ${addonsHtml}
+        ${extraLines.join('')}
       </div>
     `;
   }).join('');
+  const orderNo = order.id.replace(/\D/g,'').slice(-8) || order.id.slice(-8);
   document.getElementById('receiptPaper').innerHTML = `
-    <div class="r-shop">DAPUR PARTO</div>
-    <div class="r-tagline">matcha · kopi gula aren · roasted milk tea</div>
+    <div class="r-shop">${(shopInfo.name||'DAPUR PARTO').toUpperCase()}</div>
+    ${shopInfo.tagline ? `<div class="r-tagline">${shopInfo.tagline}</div>` : ''}
+    ${shopInfo.address ? `<div class="r-address">${shopInfo.address}</div>` : ''}
     <hr>
-    <div class="r-row"><span>No. Order</span><span>${order.id.slice(-8)}</span></div>
+    <div class="r-row"><span>No. Order</span><span>${orderNo}</span></div>
     <div class="r-row"><span>Tanggal</span><span>${fmtDateTime(order.orderDate)}</span></div>
     <div class="r-row"><span>Customer</span><span>${order.customerName}</span></div>
     <div class="r-row"><span>Channel</span><span>${order.channelName}</span></div>
@@ -1287,9 +1508,12 @@ function showReceipt(order){
     <div class="r-row"><span>Subtotal Produk</span><span>${rupiah(order.subtotal!=null ? order.subtotal : order.total)}</span></div>
     <div class="r-row"><span>Ongkir</span><span>${rupiah(order.ongkir||0)}</span></div>
     <div class="r-row r-total"><span>TOTAL</span><span>${rupiah(order.total)}</span></div>
-    <div class="r-row" style="margin-top:6px;"><span>Status</span><span>${order.status}</span></div>
+    <div class="r-row" style="margin-top:8px;"><span>Status</span><span>${order.status}</span></div>
     ${order.notes ? `<div class="r-row"><span>Notes</span><span>${order.notes}</span></div>` : ''}
-    <div class="r-footer">Terima kasih sudah order di Dapur Parto! 🍵</div>
+    <div class="r-footer">
+      ${shopInfo.social ? `Check our social media ${shopInfo.social} to get a promo<br><br>` : ''}
+      ${(shopInfo.footerMsg||'').split('\n').join('<br>')}
+    </div>
   `;
   document.getElementById('receiptOverlay').classList.add('show');
 }
@@ -1309,11 +1533,14 @@ document.getElementById('btnPrintLastOrder').addEventListener('click', ()=>{
   if(!products || products.length===0){ products = DEFAULT_PRODUCTS; await saveProducts(); }
   if(!addons){ addons = DEFAULT_ADDONS; await saveAddons(); }
   if(!channels || channels.length===0){ channels = DEFAULT_CHANNELS; await saveChannels(); }
+  if(!sugarLevels || sugarLevels.length===0){ sugarLevels = DEFAULT_SUGAR_LEVELS; await saveSugarLevels(); }
 
   renderDashboard();
   renderProductSettings();
   renderAddonSettings();
+  renderSugarSettings();
   renderChannelSettings();
+  renderShopInfoForm();
   resetForm();
   renderList();
   renderStock();
