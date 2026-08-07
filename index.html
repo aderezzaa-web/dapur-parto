@@ -4,10 +4,6 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Dapur Parto — Order Management</title>
-<link rel="manifest" href="manifest.json">
-<meta name="theme-color" content="#3D6B3A">
-<link rel="icon" href="icon-192.png">
-<link rel="apple-touch-icon" href="icon-192.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&family=Baloo+2:wght@600;700;800&display=swap" rel="stylesheet">
 <style>
@@ -435,7 +431,12 @@
         </div>
         <div class="form-row">
           <label>Jadwal Antar — Jam</label>
-          <input type="time" id="fDeliveryTime">
+          <div style="display:flex;gap:8px;align-items:center;">
+            <select id="fDeliveryHour"></select>
+            <span style="color:var(--ink-soft);">:</span>
+            <select id="fDeliveryMinute"></select>
+          </div>
+          <div style="font-size:11px;color:var(--ink-soft);margin-top:4px;">Format 24 jam — contoh: 12 = siang, 00 = tengah malam, 19 = jam 7 malam</div>
         </div>
       </div>
 
@@ -661,6 +662,16 @@ let formItems = []; // {rowId, productId, qty, addonIds:[], sugarLevelId}
 let rowCounter = 0;
 
 function rupiah(n){ return 'Rp ' + Math.round(n||0).toLocaleString('id-ID'); }
+function populateDeliveryTimeSelects(){
+  const hourSel = document.getElementById('fDeliveryHour');
+  const minSel = document.getElementById('fDeliveryMinute');
+  if(hourSel.options.length===0){
+    hourSel.innerHTML = Array.from({length:24},(_,h)=>`<option value="${String(h).padStart(2,'0')}">${String(h).padStart(2,'0')}</option>`).join('');
+  }
+  if(minSel.options.length===0){
+    minSel.innerHTML = ['00','15','30','45'].map(m=>`<option value="${m}">${m}</option>`).join('');
+  }
+}
 function todayStr(){ const d=new Date(); return d.toISOString().slice(0,10); }
 function fmtDate(ts){
   if(!ts) return '-';
@@ -1062,7 +1073,9 @@ function resetForm(){
   document.getElementById('fCustomer').value='';
   document.getElementById('fStatus').value='Confirmed';
   document.getElementById('fDeliveryDate').value = todayStr();
-  document.getElementById('fDeliveryTime').value = '';
+  populateDeliveryTimeSelects();
+  document.getElementById('fDeliveryHour').value = '12';
+  document.getElementById('fDeliveryMinute').value = '00';
   document.getElementById('fOngkir').value = '0';
   document.getElementById('fNotes').value='';
   formItems = [];
@@ -1077,13 +1090,17 @@ function editOrder(order){
   document.getElementById('fCustomer').value = order.customerName;
   document.getElementById('fChannel').value = order.channelId;
   document.getElementById('fStatus').value = order.status;
+  populateDeliveryTimeSelects();
   if(order.deliverySchedule){
     const d = new Date(order.deliverySchedule);
     document.getElementById('fDeliveryDate').value = d.toISOString().slice(0,10);
-    document.getElementById('fDeliveryTime').value = d.toTimeString().slice(0,5);
+    document.getElementById('fDeliveryHour').value = String(d.getHours()).padStart(2,'0');
+    const roundedMin = ['00','15','30','45'].reduce((best,m)=> Math.abs(d.getMinutes()-parseInt(m)) < Math.abs(d.getMinutes()-parseInt(best)) ? m : best, '00');
+    document.getElementById('fDeliveryMinute').value = roundedMin;
   }else{
     document.getElementById('fDeliveryDate').value = '';
-    document.getElementById('fDeliveryTime').value = '';
+    document.getElementById('fDeliveryHour').value = '12';
+    document.getElementById('fDeliveryMinute').value = '00';
   }
   document.getElementById('fOngkir').value = order.ongkir||0;
   document.getElementById('fNotes').value = order.notes||'';
@@ -1104,7 +1121,7 @@ async function saveOrder(){
   const chId = document.getElementById('fChannel').value;
   const ch = channels.find(c=>c.id===chId);
   const dDate = document.getElementById('fDeliveryDate').value;
-  const dTime = document.getElementById('fDeliveryTime').value || '00:00';
+  const dTime = document.getElementById('fDeliveryHour').value + ':' + document.getElementById('fDeliveryMinute').value;
   const deliverySchedule = dDate ? new Date(dDate+'T'+dTime+':00').getTime() : null;
   const ongkir = parseInt(document.getElementById('fOngkir').value)||0;
 
