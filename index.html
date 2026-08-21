@@ -536,21 +536,85 @@
   <!-- BELANJA STOK -->
   <div class="tabpanel" id="tab-stock">
     <div class="panel">
-      <h2>Daftar Belanja Stok</h2>
-      <p class="desc">Catat pembelian bahan baku</p>
-      <div class="stock-form">
-        <div><label>Item</label><input type="text" id="sItem" placeholder="mis. Bubuk Matcha 500g"></div>
-        <div><label>Harga</label><input type="number" id="sHarga" placeholder="0"></div>
-        <div><label>Tanggal</label><input type="date" id="sTanggal"></div>
-        <button class="btn btn-primary" id="btnAddStock">+ Tambah</button>
-      </div>
+      <h2>Sisa Stok</h2>
+      <p class="desc">Rekap otomatis: total belanja masuk dikurangi total pemakaian.</p>
       <div class="table-scroll">
         <table>
-          <thead><tr><th>Item</th><th>Harga</th><th>Tanggal</th><th></th></tr></thead>
-          <tbody id="stockBody"></tbody>
+          <thead><tr><th>Item</th><th>Sisa Stok</th><th>Terakhir Update</th></tr></thead>
+          <tbody id="sisaStokBody"></tbody>
         </table>
       </div>
-      <div class="total-row"><span class="lbl">Total Belanja</span><span class="amt" id="stockTotal">Rp 0</span></div>
+    </div>
+
+    <div class="panel">
+      <h2>Catat Pergerakan Stok</h2>
+      <p class="desc">Catat tiap belanja masuk atau pemakaian bahan baku.</p>
+
+      <div class="form-row">
+        <label>Jenis</label>
+        <div style="display:flex;gap:8px;">
+          <button class="btn btn-secondary btn-sm" id="btnJenisIn" type="button" data-active="true">📥 Belanja Masuk</button>
+          <button class="btn btn-secondary btn-sm" id="btnJenisOut" type="button">📤 Pemakaian Keluar</button>
+        </div>
+      </div>
+
+      <div class="grid2">
+        <div class="form-row">
+          <label>Tanggal</label>
+          <input type="date" id="sTanggal">
+        </div>
+        <div class="form-row">
+          <label>Jam</label>
+          <div style="display:flex;gap:8px;align-items:center;">
+            <select id="sJam"></select>
+            <span style="color:var(--ink-soft);">:</span>
+            <select id="sMenit"></select>
+          </div>
+        </div>
+      </div>
+
+      <div class="form-row" id="sTokoRow">
+        <label>Toko / Supplier</label>
+        <input type="text" id="sToko" list="tokoOptions" placeholder="mis. Naga Swalayan">
+        <datalist id="tokoOptions"></datalist>
+      </div>
+
+      <div class="grid2">
+        <div class="form-row">
+          <label>Item</label>
+          <input type="text" id="sItem" list="itemOptions" placeholder="mis. Susu Indomilk 950ml">
+          <datalist id="itemOptions"></datalist>
+        </div>
+        <div class="form-row">
+          <label>Qty</label>
+          <input type="number" id="sQty" placeholder="0">
+        </div>
+      </div>
+
+      <div class="form-row" id="sHargaRow">
+        <label>Harga (opsional)</label>
+        <input type="number" id="sHarga" placeholder="0">
+      </div>
+
+      <div class="form-row">
+        <label>Catatan (opsional)</label>
+        <input type="text" id="sCatatan" placeholder="mis. terpakai produksi, rusak/expired">
+      </div>
+
+      <button class="btn btn-primary" id="btnAddStock">+ Simpan</button>
+    </div>
+
+    <div class="panel">
+      <h2>Riwayat Pergerakan Stok</h2>
+      <div class="filter-bar">
+        <select id="stockFilterJenis">
+          <option value="all">Semua</option>
+          <option value="in">Belanja Masuk</option>
+          <option value="out">Pemakaian Keluar</option>
+        </select>
+      </div>
+      <div id="stockLogList"></div>
+      <div class="total-row"><span class="lbl">Total Belanja (Masuk)</span><span class="amt" id="stockTotal">Rp 0</span></div>
     </div>
   </div>
 
@@ -618,8 +682,8 @@ const toChannelRow = c => ({id:c.id, name:c.name, type:c.type});
 const fromChannelRow = r => ({id:r.id, name:r.name, type:r.type});
 const toOrderRow = o => ({id:o.id, customer_name:o.customerName, order_date:o.orderDate, channel_id:o.channelId, channel_name:o.channelName, channel_type:o.channelType, delivery_schedule:o.deliverySchedule, items:o.items, subtotal:o.subtotal||0, ongkir:o.ongkir||0, total:o.total, status:o.status, notes:o.notes});
 const fromOrderRow = r => ({id:r.id, customerName:r.customer_name, orderDate:r.order_date, channelId:r.channel_id, channelName:r.channel_name, channelType:r.channel_type, deliverySchedule:r.delivery_schedule, items:r.items, subtotal:r.subtotal||0, ongkir:r.ongkir||0, total:r.total, status:r.status, notes:r.notes});
-const toStockRow = s => ({id:s.id, item:s.item, harga:s.harga, tanggal:s.tanggal});
-const fromStockRow = r => ({id:r.id, item:r.item, harga:r.harga, tanggal:r.tanggal});
+const toStockRow = s => ({id:s.id, tanggal:s.tanggal, jenis:s.jenis||'in', toko:s.toko||'', item:s.item, qty:s.qty||0, harga:s.harga||0, catatan:s.catatan||''});
+const fromStockRow = r => ({id:r.id, tanggal:r.tanggal, jenis:r.jenis||'in', toko:r.toko||'', item:r.item, qty:r.qty||0, harga:r.harga||0, catatan:r.catatan||''});
 const toSugarRow = s => ({id:s.id, name:s.name, price:s.price||0});
 const fromSugarRow = r => ({id:r.id, name:r.name, price:r.price||0});
 const fromShopInfoRow = r => ({name:r.name||'', tagline:r.tagline||'', address:r.address||'', social:r.social||'', footerMsg:r.footer_msg||''});
@@ -694,7 +758,7 @@ async function loadAll(){
     sb.from('addons').select('*'),
     sb.from('channels').select('*'),
     sb.from('orders').select('*').order('order_date', {ascending:false}),
-    sb.from('stock').select('*').order('tanggal', {ascending:false}),
+    sb.from('stock_log').select('*').order('tanggal', {ascending:false}),
     sb.from('sugar_levels').select('*'),
     sb.from('shop_info').select('*').eq('id','main').maybeSingle(),
   ]);
@@ -747,7 +811,7 @@ async function saveOrders(){
   if(error){ try{console.error('saveOrders error:', error.message);}catch(e){} showToast('Gagal simpan ke server: '+error.message); }
 }
 async function saveStock(){
-  const { error } = await sb.from('stock').upsert(stock.map(toStockRow));
+  const { error } = await sb.from('stock_log').upsert(stock.map(toStockRow));
   if(error){ try{console.error('saveStock error:', error.message);}catch(e){} showToast('Gagal simpan ke server: '+error.message); }
 }
 async function deleteRemote(table, id){
@@ -916,11 +980,15 @@ function renderDashboard(){
     return orderRowHtml(o, relativeDeliveryLabel(o.deliverySchedule));
   }).join('') : '<div class="dp-empty">Belum ada order masuk di rentang ini.</div>';
 
-  // Stock — belanja stok terbaru (tidak ikut filter tanggal, selalu tampilkan yang terbaru)
-  const recentStock = [...stock].sort((a,b)=>b.tanggal-a.tanggal).slice(0,6);
-  document.getElementById('dashStock').innerHTML = recentStock.length ? recentStock.map(s=>`
-    <div class="dp-list-row"><span>${s.item}</span><span class="qty">${rupiah(s.harga)}</span></div>
-  `).join('') : '<div class="dp-empty">Belum ada belanja stok tercatat.</div>';
+  // Stock — sisa stok per item (tidak ikut filter tanggal dashboard, selalu kondisi terkini)
+  const stockTally = {};
+  [...stock].sort((a,b)=>a.tanggal-b.tanggal).forEach(s=>{
+    stockTally[s.item] = (stockTally[s.item]||0) + (s.jenis==='out' ? -s.qty : s.qty);
+  });
+  const stockEntries = Object.entries(stockTally).sort((a,b)=>a[0].localeCompare(b[0])).slice(0,8);
+  document.getElementById('dashStock').innerHTML = stockEntries.length ? stockEntries.map(([item,qty])=>`
+    <div class="dp-list-row"><span>${item}</span><span class="qty" style="${qty<=0?'color:var(--red);':''}">${qty}</span></div>
+  `).join('') : '<div class="dp-empty">Belum ada data stok tercatat.</div>';
 }
 
 document.getElementById('dpCtaAddOrder').addEventListener('click', ()=>{
@@ -1308,43 +1376,111 @@ document.getElementById('lChannel').addEventListener('change', renderList);
 document.getElementById('lSort').addEventListener('change', renderList);
 
 /* ===================== BELANJA STOK ===================== */
+let stockJenis = 'in';
+
+function populateStockTimeSelects(){
+  const jamSel = document.getElementById('sJam');
+  const menitSel = document.getElementById('sMenit');
+  const isFirstPopulate = jamSel.options.length===0;
+  if(isFirstPopulate){
+    jamSel.innerHTML = Array.from({length:24},(_,h)=>`<option value="${String(h).padStart(2,'0')}">${String(h).padStart(2,'0')}</option>`).join('');
+    jamSel.value = String(new Date().getHours()).padStart(2,'0');
+  }
+  if(menitSel.options.length===0){
+    menitSel.innerHTML = ['00','15','30','45'].map(m=>`<option value="${m}">${m}</option>`).join('');
+  }
+}
+
+function setStockJenis(jenis){
+  stockJenis = jenis;
+  document.getElementById('btnJenisIn').dataset.active = jenis==='in' ? 'true' : 'false';
+  document.getElementById('btnJenisOut').dataset.active = jenis==='out' ? 'true' : 'false';
+  document.getElementById('btnJenisIn').style.background = jenis==='in' ? 'var(--primary-soft)' : '';
+  document.getElementById('btnJenisIn').style.borderColor = jenis==='in' ? 'var(--primary)' : '';
+  document.getElementById('btnJenisOut').style.background = jenis==='out' ? 'var(--red-soft)' : '';
+  document.getElementById('btnJenisOut').style.borderColor = jenis==='out' ? 'var(--red)' : '';
+  document.getElementById('sTokoRow').style.display = jenis==='in' ? 'block' : 'none';
+  document.getElementById('sHargaRow').style.display = jenis==='in' ? 'block' : 'none';
+}
+document.getElementById('btnJenisIn').addEventListener('click', ()=>setStockJenis('in'));
+document.getElementById('btnJenisOut').addEventListener('click', ()=>setStockJenis('out'));
+
 function renderStock(){
   document.getElementById('sTanggal').value = document.getElementById('sTanggal').value || todayStr();
-  const body = document.getElementById('stockBody');
-  const sorted = [...stock].sort((a,b)=>b.tanggal - a.tanggal);
-  if(sorted.length===0){
-    body.innerHTML = `<tr><td colspan="4" class="empty-note">Belum ada belanja stok.</td></tr>`;
-  }else{
-    body.innerHTML = sorted.map(s=>`
-      <tr>
-        <td>${s.item}</td>
-        <td>${rupiah(s.harga)}</td>
-        <td>${fmtDate(s.tanggal)}</td>
-        <td><button class="btn-danger" data-id="${s.id}">Hapus</button></td>
-      </tr>
-    `).join('');
-    body.querySelectorAll('.btn-danger').forEach(btn=>{
-      btn.addEventListener('click', async e=>{
-        if(!(await askConfirm('Hapus item belanja ini?'))) return;
-        await deleteRemote('stock', btn.dataset.id);
-        stock = stock.filter(s=>s.id!==btn.dataset.id);
-        renderStock();
-      });
+  populateStockTimeSelects();
+
+  // datalist item & toko dari histori
+  const itemSet = new Set(stock.map(s=>s.item).filter(Boolean));
+  document.getElementById('itemOptions').innerHTML = [...itemSet].map(i=>`<option value="${i}">`).join('');
+  const tokoSet = new Set(stock.map(s=>s.toko).filter(Boolean));
+  document.getElementById('tokoOptions').innerHTML = [...tokoSet].map(t=>`<option value="${t}">`).join('');
+
+  // Sisa Stok — rekap per item
+  const tally = {}; // item -> {qty, lastUpdate}
+  [...stock].sort((a,b)=>a.tanggal-b.tanggal).forEach(s=>{
+    if(!tally[s.item]) tally[s.item] = {qty:0, last:s.tanggal};
+    tally[s.item].qty += (s.jenis==='out' ? -s.qty : s.qty);
+    tally[s.item].last = s.tanggal;
+  });
+  const sisaEntries = Object.entries(tally).sort((a,b)=>a[0].localeCompare(b[0]));
+  const sisaBody = document.getElementById('sisaStokBody');
+  sisaBody.innerHTML = sisaEntries.length ? sisaEntries.map(([item,v])=>`
+    <tr><td>${item}</td><td style="font-weight:700;${v.qty<=0?'color:var(--red);':''}">${v.qty}</td><td>${fmtDate(v.last)}</td></tr>
+  `).join('') : `<tr><td colspan="3" class="empty-note">Belum ada data stok.</td></tr>`;
+
+  // Riwayat log (dengan filter jenis)
+  const filterJenis = document.getElementById('stockFilterJenis').value;
+  const filtered = stock.filter(s=> filterJenis==='all' || s.jenis===filterJenis).sort((a,b)=>b.tanggal-a.tanggal);
+  const listEl = document.getElementById('stockLogList');
+  listEl.innerHTML = filtered.length ? filtered.map(s=>{
+    const dt = new Date(s.tanggal).toLocaleDateString('id-ID',{day:'2-digit',month:'2-digit',year:'2-digit'}) + ' ' + new Date(s.tanggal).toLocaleTimeString('id-ID',{hour:'2-digit',minute:'2-digit'});
+    const label = s.jenis==='in'
+      ? `${dt} — ${s.toko||'-'} — ${s.item} — qty ${s.qty}`
+      : `${dt} — Pemakaian — ${s.item} — qty ${s.qty}`;
+    return `
+      <div class="dp-list-row" style="align-items:center;">
+        <span>${s.jenis==='in'?'📥':'📤'} ${label}${s.catatan?` <span style="color:var(--ink-soft);font-style:italic;">(${s.catatan})</span>`:''}</span>
+        <button class="btn-danger" data-id="${s.id}" style="flex-shrink:0;">Hapus</button>
+      </div>
+    `;
+  }).join('') : '<div class="dp-empty">Belum ada riwayat.</div>';
+  listEl.querySelectorAll('.btn-danger').forEach(btn=>{
+    btn.addEventListener('click', async e=>{
+      if(!(await askConfirm('Hapus catatan ini?'))) return;
+      await deleteRemote('stock_log', btn.dataset.id);
+      stock = stock.filter(s=>s.id!==btn.dataset.id);
+      renderStock();
     });
-  }
-  const total = stock.reduce((s,x)=>s+x.harga,0);
-  document.getElementById('stockTotal').textContent = rupiah(total);
+  });
+
+  const totalBelanja = stock.filter(s=>s.jenis==='in').reduce((s,x)=>s+(x.harga||0),0);
+  document.getElementById('stockTotal').textContent = rupiah(totalBelanja);
 }
+document.getElementById('stockFilterJenis').addEventListener('change', renderStock);
+
 document.getElementById('btnAddStock').addEventListener('click', async ()=>{
   const item = document.getElementById('sItem').value.trim();
+  const qty = parseFloat(document.getElementById('sQty').value)||0;
+  const toko = document.getElementById('sToko').value.trim();
   const harga = parseInt(document.getElementById('sHarga').value)||0;
+  const catatan = document.getElementById('sCatatan').value.trim();
   const tanggalStr = document.getElementById('sTanggal').value || todayStr();
+  const jam = document.getElementById('sJam').value || '00';
+  const menit = document.getElementById('sMenit').value || '00';
   if(!item){ showToast('Isi nama item dulu ya.'); return; }
-  stock.unshift({id:'stk_'+Date.now(), item, harga, tanggal:new Date(tanggalStr+'T00:00:00').getTime()});
+  if(qty<=0){ showToast('Isi qty dulu ya.'); return; }
+  if(stockJenis==='in' && !toko){ showToast('Isi nama toko/supplier dulu ya.'); return; }
+
+  const tanggal = new Date(tanggalStr+'T'+jam+':'+menit+':00').getTime();
+  stock.unshift({id:'stk_'+Date.now(), tanggal, jenis:stockJenis, toko, item, qty, harga:stockJenis==='in'?harga:0, catatan});
   await saveStock();
   document.getElementById('sItem').value='';
+  document.getElementById('sQty').value='';
+  document.getElementById('sToko').value='';
   document.getElementById('sHarga').value='';
+  document.getElementById('sCatatan').value='';
   renderStock();
+  showToast('Tersimpan.');
 });
 
 /* ===================== SETTINGS ===================== */
@@ -1581,6 +1717,7 @@ document.getElementById('btnPrintLastOrder').addEventListener('click', ()=>{
   renderShopInfoForm();
   resetForm();
   renderList();
+  setStockJenis('in');
   renderStock();
 })();
 </script>
