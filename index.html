@@ -455,17 +455,28 @@
 
       <div class="grid2">
         <div class="form-row">
-          <label>Ongkir (Gojek/Grab, dll)</label>
-          <input type="number" id="fOngkir" min="0" placeholder="0" value="0">
+          <label>Diskon</label>
+          <div style="display:flex;gap:8px;">
+            <select id="fDiscountType" style="width:90px;flex-shrink:0;">
+              <option value="amount">Rp</option>
+              <option value="percent">%</option>
+            </select>
+            <input type="number" id="fDiscountValue" min="0" placeholder="0" value="0">
+          </div>
         </div>
         <div class="form-row">
-          <div class="readonly-box" style="margin-top:22px;font-size:12px;">Cek tarif di app kurir, masukin manual di sini.</div>
+          <label>Ongkir (Gojek/Grab, dll)</label>
+          <input type="number" id="fOngkir" min="0" placeholder="0" value="0">
         </div>
       </div>
 
       <div class="total-row" style="border-top:none;padding-top:0;">
         <span class="lbl">Subtotal Produk</span>
         <span class="amt" style="font-size:14px;font-weight:600;" id="formSubtotal">Rp 0</span>
+      </div>
+      <div class="total-row" style="padding:6px 0;">
+        <span class="lbl">Diskon</span>
+        <span class="amt" style="font-size:14px;font-weight:600;color:var(--red);" id="formDiscountDisplay">- Rp 0</span>
       </div>
       <div class="total-row" style="padding:6px 0;">
         <span class="lbl">Ongkir</span>
@@ -682,8 +693,8 @@ const toAddonRow = a => ({id:a.id, name:a.name, price:a.price||0});
 const fromAddonRow = r => ({id:r.id, name:r.name, price:r.price||0});
 const toChannelRow = c => ({id:c.id, name:c.name, type:c.type});
 const fromChannelRow = r => ({id:r.id, name:r.name, type:r.type});
-const toOrderRow = o => ({id:o.id, customer_name:o.customerName, order_date:o.orderDate, channel_id:o.channelId, channel_name:o.channelName, channel_type:o.channelType, delivery_schedule:o.deliverySchedule, items:o.items, subtotal:o.subtotal||0, ongkir:o.ongkir||0, total:o.total, status:o.status, notes:o.notes});
-const fromOrderRow = r => ({id:r.id, customerName:r.customer_name, orderDate:r.order_date, channelId:r.channel_id, channelName:r.channel_name, channelType:r.channel_type, deliverySchedule:r.delivery_schedule, items:r.items, subtotal:r.subtotal||0, ongkir:r.ongkir||0, total:r.total, status:r.status, notes:r.notes});
+const toOrderRow = o => ({id:o.id, customer_name:o.customerName, order_date:o.orderDate, channel_id:o.channelId, channel_name:o.channelName, channel_type:o.channelType, delivery_schedule:o.deliverySchedule, items:o.items, subtotal:o.subtotal||0, discount_type:o.discountType||'amount', discount_value:o.discountValue||0, discount_amount:o.discountAmount||0, ongkir:o.ongkir||0, total:o.total, status:o.status, notes:o.notes});
+const fromOrderRow = r => ({id:r.id, customerName:r.customer_name, orderDate:r.order_date, channelId:r.channel_id, channelName:r.channel_name, channelType:r.channel_type, deliverySchedule:r.delivery_schedule, items:r.items, subtotal:r.subtotal||0, discountType:r.discount_type||'amount', discountValue:r.discount_value||0, discountAmount:r.discount_amount||0, ongkir:r.ongkir||0, total:r.total, status:r.status, notes:r.notes});
 const toStockRow = s => ({id:s.id, tanggal:s.tanggal, jenis:s.jenis||'in', toko:s.toko||'', item:s.item, qty:s.qty||0, harga:s.harga||0, catatan:s.catatan||''});
 const fromStockRow = r => ({id:r.id, tanggal:r.tanggal, jenis:r.jenis||'in', toko:r.toko||'', item:r.item, qty:r.qty||0, harga:r.harga||0, catatan:r.catatan||''});
 const toSugarRow = s => ({id:s.id, name:s.name, price:s.price||0});
@@ -1152,11 +1163,18 @@ function recalcFormTotal(){
     const sugarPrice = sugar ? (sugar.price||0) : 0;
     subtotal += (effectivePrice + addonTotal + sugarPrice)*r.qty;
   });
+  const discountType = document.getElementById('fDiscountType').value;
+  const discountValue = parseFloat(document.getElementById('fDiscountValue').value)||0;
+  const discountAmount = discountType==='percent' ? Math.round(subtotal*discountValue/100) : discountValue;
+  const discountClamped = Math.min(discountAmount, subtotal);
   const ongkir = parseInt(document.getElementById('fOngkir').value)||0;
   document.getElementById('formSubtotal').textContent = rupiah(subtotal);
+  document.getElementById('formDiscountDisplay').textContent = '- '+rupiah(discountClamped);
   document.getElementById('formOngkirDisplay').textContent = rupiah(ongkir);
-  document.getElementById('formTotal').textContent = rupiah(subtotal+ongkir);
+  document.getElementById('formTotal').textContent = rupiah(subtotal-discountClamped+ongkir);
 }
+document.getElementById('fDiscountType').addEventListener('change', recalcFormTotal);
+document.getElementById('fDiscountValue').addEventListener('input', recalcFormTotal);
 document.getElementById('fOngkir').addEventListener('input', recalcFormTotal);
 document.getElementById('fChannel').addEventListener('change', ()=>{ renderItemRows(); });
 
@@ -1180,6 +1198,8 @@ function resetForm(){
   document.getElementById('fDeliveryHour').value = '12';
   document.getElementById('fDeliveryMinute').value = '00';
   document.getElementById('fOngkir').value = '0';
+  document.getElementById('fDiscountType').value = 'amount';
+  document.getElementById('fDiscountValue').value = '0';
   document.getElementById('fNotes').value='';
   formItems = [];
   addItemRow();
@@ -1206,6 +1226,8 @@ function editOrder(order){
     document.getElementById('fDeliveryMinute').value = '00';
   }
   document.getElementById('fOngkir').value = order.ongkir||0;
+  document.getElementById('fDiscountType').value = order.discountType||'amount';
+  document.getElementById('fDiscountValue').value = order.discountValue||0;
   document.getElementById('fNotes').value = order.notes||'';
   formItems = order.items.map(it=>{
     rowCounter++;
@@ -1227,6 +1249,8 @@ async function saveOrder(){
   const dTime = document.getElementById('fDeliveryHour').value + ':' + document.getElementById('fDeliveryMinute').value;
   const deliverySchedule = dDate ? new Date(dDate+'T'+dTime+':00').getTime() : null;
   const ongkir = parseInt(document.getElementById('fOngkir').value)||0;
+  const discountType = document.getElementById('fDiscountType').value;
+  const discountValue = parseFloat(document.getElementById('fDiscountValue').value)||0;
 
   let subtotal = 0;
   const items = formItems.map(r=>{
@@ -1244,7 +1268,9 @@ async function saveOrder(){
     subtotal += itemSubtotal;
     return {productId:r.productId, name:prod?prod.name:r.productId, qty:r.qty, unitPrice, addons:addonList, sugarLevel, subtotal:itemSubtotal};
   });
-  const total = subtotal + ongkir;
+  const discountAmountRaw = discountType==='percent' ? Math.round(subtotal*discountValue/100) : discountValue;
+  const discountAmount = Math.min(discountAmountRaw, subtotal);
+  const total = subtotal - discountAmount + ongkir;
 
   const isEdit = !!editingOrderId;
   const existing = isEdit ? orders.find(o=>o.id===editingOrderId) : null;
@@ -1259,6 +1285,9 @@ async function saveOrder(){
     deliverySchedule,
     items,
     subtotal,
+    discountType,
+    discountValue,
+    discountAmount,
     ongkir,
     total,
     status: document.getElementById('fStatus').value,
@@ -1699,6 +1728,7 @@ function showReceipt(order){
     ${itemsHtml}
     <hr>
     <div class="r-row"><span>Subtotal Produk</span><span>${rupiah(order.subtotal!=null ? order.subtotal : order.total)}</span></div>
+    ${order.discountAmount ? `<div class="r-row"><span>Diskon${order.discountType==='percent' && order.discountValue ? ' ('+order.discountValue+'%)' : ''}</span><span>- ${rupiah(order.discountAmount)}</span></div>` : ''}
     <div class="r-row"><span>Ongkir</span><span>${rupiah(order.ongkir||0)}</span></div>
     <div class="r-row r-total"><span>TOTAL</span><span>${rupiah(order.total)}</span></div>
     <div class="r-row" style="margin-top:8px;"><span>Status</span><span>${order.status}</span></div>
