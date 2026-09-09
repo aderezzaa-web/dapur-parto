@@ -31,6 +31,7 @@
     --brown-ink:#2E2416;
   }
   *{box-sizing:border-box;}
+  .hidden{display:none !important;}
   body{
     margin:0;background:var(--bg);color:var(--ink);
     font-family:'Inter',sans-serif;font-size:14px;
@@ -115,7 +116,7 @@
   .btn-sm{font-size:12px;padding:5px 10px;}
 
   .item-row-v2{margin-bottom:12px;padding-bottom:12px;border-bottom:1px dashed var(--border);}
-  .item-row-top{display:grid;grid-template-columns:1.5fr 60px 100px 26px;gap:8px;align-items:center;margin-bottom:8px;}
+  .item-row-top{display:grid;grid-template-columns:1.3fr 50px 95px 90px 26px;gap:6px;align-items:center;margin-bottom:8px;}
   .item-row-top select, .item-row-top input{padding:8px 9px;border:1px solid var(--border);border-radius:var(--radius);font-family:'Inter',sans-serif;font-size:13px;background:#fff;color:var(--ink);}
   .item-subtotal{font-family:'IBM Plex Mono',monospace;font-size:12px;text-align:right;color:var(--ink-soft);}
   .item-row-bottom{display:flex;flex-wrap:wrap;gap:8px;align-items:center;}
@@ -447,6 +448,7 @@
 
       <div class="form-row">
         <label>Produk yang Dibeli</label>
+        <div style="font-size:11px;color:var(--ink-soft);margin-bottom:6px;">Harga satuan otomatis dari Pengaturan, tapi bisa diketik ulang manual per item (kolom kuning = harga sudah diubah dari default).</div>
         <div id="itemRows"></div>
         <button class="btn-ghost" id="btnAddItem" type="button">+ Tambah Produk</button>
       </div>
@@ -786,37 +788,29 @@ async function loadAll(){
   sugarLevels = (slRes.data && slRes.data.length) ? slRes.data.map(fromSugarRow) : DEFAULT_SUGAR_LEVELS;
   shopInfo = siRes.data ? fromShopInfoRow(siRes.data) : {...DEFAULT_SHOP_INFO};
 }
-async function saveProducts(){
-  const { error } = await sb.from('products').upsert(products.map(toProductRow));
-  if(error){ try{console.error('saveProducts error:', error.message);}catch(e){} showToast('Gagal simpan ke server: '+error.message); }
+async function upsertOne(table, row){
+  const { error } = await sb.from(table).upsert(row);
+  if(error){ try{console.error('upsert '+table+' error:', error.message, row);}catch(e){} showToast('Gagal simpan ke server ('+table+'): '+error.message); }
+  return !error;
 }
-async function saveAddons(){
-  const { error } = await sb.from('addons').upsert(addons.map(toAddonRow));
-  if(error){ try{console.error('saveAddons error:', error.message);}catch(e){} showToast('Gagal simpan ke server: '+error.message); }
-}
-async function saveChannels(){
-  const { error } = await sb.from('channels').upsert(channels.map(toChannelRow));
-  if(error){ try{console.error('saveChannels error:', error.message);}catch(e){} showToast('Gagal simpan ke server: '+error.message); }
-}
-async function saveSugarLevels(){
-  const { error } = await sb.from('sugar_levels').upsert(sugarLevels.map(toSugarRow));
-  if(error){ try{console.error('saveSugarLevels error:', error.message);}catch(e){} showToast('Gagal simpan ke server: '+error.message); }
-}
+async function saveOneProduct(p){ return upsertOne('products', toProductRow(p)); }
+async function saveOneAddon(a){ return upsertOne('addons', toAddonRow(a)); }
+async function saveOneChannel(c){ return upsertOne('channels', toChannelRow(c)); }
+async function saveOneSugarLevel(s){ return upsertOne('sugar_levels', toSugarRow(s)); }
+async function saveOneOrder(o){ return upsertOne('orders', toOrderRow(o)); }
+async function saveOneStock(s){ return upsertOne('stock_log', toStockRow(s)); }
 async function saveShopInfo(){
   const { error } = await sb.from('shop_info').upsert(toShopInfoRow(shopInfo));
   if(error){ try{console.error('saveShopInfo error:', error.message);}catch(e){} showToast('Gagal simpan ke server: '+error.message); }
 }
-async function saveOrders(){
-  const { error } = await sb.from('orders').upsert(orders.map(toOrderRow));
-  if(error){ try{console.error('saveOrders error:', error.message);}catch(e){} showToast('Gagal simpan ke server: '+error.message); }
-}
-async function saveStock(){
-  const { error } = await sb.from('stock_log').upsert(stock.map(toStockRow));
-  if(error){ try{console.error('saveStock error:', error.message);}catch(e){} showToast('Gagal simpan ke server: '+error.message); }
-}
 async function deleteRemote(table, id){
   const { error } = await sb.from(table).delete().eq('id', id);
   if(error){ try{console.error('delete error:', table, error.message);}catch(e){} showToast('Gagal hapus di server: '+error.message); }
+}
+// Dipakai saat init untuk seed data default (array kecil, aman di-upsert sekaligus)
+async function seedDefaults(table, rows){
+  const { error } = await sb.from(table).upsert(rows);
+  if(error){ try{console.error('seed '+table+' error:', error.message);}catch(e){} }
 }
 
 function showToast(message){
@@ -1039,7 +1033,7 @@ function refreshFormOptions(){
 
 function addItemRow(){
   rowCounter++;
-  formItems.push({rowId: rowCounter, productId: products[0]?products[0].id:'', qty:1, addonIds:[], sugarLevelId: sugarLevels[0]?sugarLevels[0].id:''});
+  formItems.push({rowId: rowCounter, productId: products[0]?products[0].id:'', qty:1, addonIds:[], sugarLevelId: sugarLevels[0]?sugarLevels[0].id:'', priceOverride:null});
   renderItemRows();
 }
 function removeItemRow(rowId){
@@ -1065,22 +1059,25 @@ function renderItemRows(){
   }
   el.innerHTML = formItems.map(r=>{
     const prod = products.find(p=>p.id===r.productId) || products[0];
-    const unitPrice = unitPriceFor(prod);
+    const defaultPrice = unitPriceFor(prod);
+    const effectivePrice = (r.priceOverride!=null) ? r.priceOverride : defaultPrice;
     const addonTotal = r.addonIds.reduce((s,aid)=>{ const a = addons.find(x=>x.id===aid); return s + (a?a.price:0); },0);
     const sugar = sugarLevels.find(s=>s.id===r.sugarLevelId);
     const sugarPrice = sugar ? (sugar.price||0) : 0;
-    const subtotal = (unitPrice + addonTotal + sugarPrice)*r.qty;
+    const subtotal = (effectivePrice + addonTotal + sugarPrice)*r.qty;
     const options = products.map(p=>`<option value="${p.id}" ${p.id===r.productId?'selected':''}>${p.name}</option>`).join('');
     const sugarOptions = sugarLevels.map(s=>`<option value="${s.id}" ${s.id===r.sugarLevelId?'selected':''}>${s.name}${s.price?' (+'+rupiah(s.price)+')':''}</option>`).join('');
     const addonChips = addons.map(a=>{
       const active = r.addonIds.includes(a.id);
       return `<div class="addon-chip ${active?'active':''}" data-row="${r.rowId}" data-addon="${a.id}">${a.name} ${a.price?'(+'+rupiah(a.price)+')':''}</div>`;
     }).join('');
+    const overrideTag = (r.priceOverride!=null && r.priceOverride!==defaultPrice) ? ' style="border-color:var(--amber);background:#FFF8ED;"' : '';
     return `
       <div class="item-row-v2" data-row="${r.rowId}">
         <div class="item-row-top">
           <select class="itemProduct" data-row="${r.rowId}">${options}</select>
           <input type="number" min="1" class="itemQty" data-row="${r.rowId}" value="${r.qty}">
+          <input type="number" min="0" class="itemPrice" data-row="${r.rowId}" value="${effectivePrice}"${overrideTag} title="Harga satuan (bisa diubah manual)">
           <span class="item-subtotal">${rupiah(subtotal)}</span>
           <button class="rm-btn" data-row="${r.rowId}" type="button">×</button>
         </div>
@@ -1096,6 +1093,7 @@ function renderItemRows(){
     sel.addEventListener('change', e=>{
       const row = formItems.find(r=>r.rowId===parseInt(e.target.dataset.row));
       row.productId = e.target.value;
+      row.priceOverride = null; // ganti produk -> balik ke harga default produk baru
       renderItemRows();
     });
   });
@@ -1104,6 +1102,22 @@ function renderItemRows(){
       const row = formItems.find(r=>r.rowId===parseInt(e.target.dataset.row));
       row.qty = Math.max(1, parseInt(e.target.value)||1);
       renderItemRows();
+    });
+  });
+  el.querySelectorAll('.itemPrice').forEach(inp=>{
+    inp.addEventListener('input', e=>{
+      const row = formItems.find(r=>r.rowId===parseInt(e.target.dataset.row));
+      row.priceOverride = Math.max(0, parseInt(e.target.value)||0);
+      recalcFormTotal();
+      // update subtotal tampilan tanpa re-render penuh biar fokus input gak lepas
+      const rowEl = el.querySelector(`.item-row-v2[data-row="${row.rowId}"]`);
+      if(rowEl){
+        const addonTotal = row.addonIds.reduce((s,aid)=>{ const a = addons.find(x=>x.id===aid); return s + (a?a.price:0); },0);
+        const sugar = sugarLevels.find(s=>s.id===row.sugarLevelId);
+        const sugarPrice = sugar ? (sugar.price||0) : 0;
+        const subtotal = (row.priceOverride + addonTotal + sugarPrice)*row.qty;
+        rowEl.querySelector('.item-subtotal').textContent = rupiah(subtotal);
+      }
     });
   });
   el.querySelectorAll('.itemSugar').forEach(sel=>{
@@ -1132,11 +1146,11 @@ function recalcFormTotal(){
   let subtotal = 0;
   formItems.forEach(r=>{
     const prod = products.find(p=>p.id===r.productId);
-    const unitPrice = unitPriceFor(prod);
+    const effectivePrice = (r.priceOverride!=null) ? r.priceOverride : unitPriceFor(prod);
     const addonTotal = r.addonIds.reduce((s,aid)=>{ const a = addons.find(x=>x.id===aid); return s + (a?a.price:0); },0);
     const sugar = sugarLevels.find(s=>s.id===r.sugarLevelId);
     const sugarPrice = sugar ? (sugar.price||0) : 0;
-    subtotal += (unitPrice + addonTotal + sugarPrice)*r.qty;
+    subtotal += (effectivePrice + addonTotal + sugarPrice)*r.qty;
   });
   const ongkir = parseInt(document.getElementById('fOngkir').value)||0;
   document.getElementById('formSubtotal').textContent = rupiah(subtotal);
@@ -1195,7 +1209,7 @@ function editOrder(order){
   document.getElementById('fNotes').value = order.notes||'';
   formItems = order.items.map(it=>{
     rowCounter++;
-    return { rowId: rowCounter, productId: it.productId, qty: it.qty, addonIds: (it.addons||[]).map(a=>a.addonId), sugarLevelId: it.sugarLevel ? it.sugarLevel.sugarLevelId : (sugarLevels[0]?sugarLevels[0].id:'') };
+    return { rowId: rowCounter, productId: it.productId, qty: it.qty, addonIds: (it.addons||[]).map(a=>a.addonId), sugarLevelId: it.sugarLevel ? it.sugarLevel.sugarLevelId : (sugarLevels[0]?sugarLevels[0].id:''), priceOverride: it.unitPrice };
   });
   renderItemRows();
   updateFormModeUI();
@@ -1217,7 +1231,7 @@ async function saveOrder(){
   let subtotal = 0;
   const items = formItems.map(r=>{
     const prod = products.find(p=>p.id===r.productId);
-    const unitPrice = unitPriceFor(prod);
+    const unitPrice = (r.priceOverride!=null) ? r.priceOverride : unitPriceFor(prod);
     const addonList = r.addonIds.map(aid=>{
       const a = addons.find(x=>x.id===aid);
       return {addonId:aid, name:a?a.name:aid, price:a?a.price:0, qty:r.qty};
@@ -1257,7 +1271,7 @@ async function saveOrder(){
   }else{
     orders.unshift(order);
   }
-  await saveOrders();
+  await saveOneOrder(order);
   lastSavedOrder = order;
   resetForm();
   document.getElementById('savedBox').classList.remove('hidden');
@@ -1356,7 +1370,7 @@ function renderList(){
     sel.addEventListener('change', async e=>{
       const o = orders.find(x=>x.id===e.target.dataset.id);
       o.status = e.target.value;
-      await saveOrders();
+      await saveOneOrder(o);
       renderList();
     });
   });
@@ -1472,8 +1486,9 @@ document.getElementById('btnAddStock').addEventListener('click', async ()=>{
   if(stockJenis==='in' && !toko){ showToast('Isi nama toko/supplier dulu ya.'); return; }
 
   const tanggal = new Date(tanggalStr+'T'+jam+':'+menit+':00').getTime();
-  stock.unshift({id:'stk_'+Date.now(), tanggal, jenis:stockJenis, toko, item, qty, harga:stockJenis==='in'?harga:0, catatan});
-  await saveStock();
+  const newEntry = {id:'stk_'+Date.now(), tanggal, jenis:stockJenis, toko, item, qty, harga:stockJenis==='in'?harga:0, catatan};
+  stock.unshift(newEntry);
+  await saveOneStock(newEntry);
   document.getElementById('sItem').value='';
   document.getElementById('sQty').value='';
   document.getElementById('sToko').value='';
@@ -1499,7 +1514,7 @@ function renderProductSettings(){
       inp.addEventListener('change', async e=>{
         const prod = products.find(p=>p.id===e.target.dataset.id);
         prod[field] = isText ? e.target.value.trim() : (parseInt(e.target.value)||0);
-        await saveProducts();
+        await saveOneProduct(prod);
         if(!isText){ renderItemRows(); }
       });
     });
@@ -1516,8 +1531,9 @@ function renderProductSettings(){
   });
 }
 document.getElementById('btnAddProduct').addEventListener('click', async ()=>{
-  products.push({id:'prod-'+Date.now(), name:'Produk Baru', priceDirect:0, priceReseller:0, modal:0});
-  await saveProducts();
+  const newProd = {id:'prod-'+Date.now(), name:'Produk Baru', priceDirect:0, priceReseller:0, modal:0};
+  products.push(newProd);
+  await saveOneProduct(newProd);
   renderProductSettings();
   renderItemRows();
 });
@@ -1534,14 +1550,14 @@ function renderAddonSettings(){
     inp.addEventListener('change', async e=>{
       const a = addons.find(x=>x.id===e.target.dataset.id);
       a.name = e.target.value.trim();
-      await saveAddons(); renderItemRows();
+      await saveOneAddon(a); renderItemRows();
     });
   });
   document.querySelectorAll('.aPrice').forEach(inp=>{
     inp.addEventListener('change', async e=>{
       const a = addons.find(x=>x.id===e.target.dataset.id);
       a.price = parseInt(e.target.value)||0;
-      await saveAddons(); renderItemRows();
+      await saveOneAddon(a); renderItemRows();
     });
   });
   document.querySelectorAll('#addonSettings .rm-btn').forEach(btn=>{
@@ -1554,8 +1570,9 @@ function renderAddonSettings(){
   });
 }
 document.getElementById('btnAddAddon').addEventListener('click', async ()=>{
-  addons.push({id:'addon-'+Date.now(), name:'Add-On Baru', price:0});
-  await saveAddons(); renderAddonSettings();
+  const newAddon = {id:'addon-'+Date.now(), name:'Add-On Baru', price:0};
+  addons.push(newAddon);
+  await saveOneAddon(newAddon); renderAddonSettings();
 });
 
 function renderSugarSettings(){
@@ -1570,14 +1587,14 @@ function renderSugarSettings(){
     inp.addEventListener('change', async e=>{
       const s = sugarLevels.find(x=>x.id===e.target.dataset.id);
       s.name = e.target.value.trim();
-      await saveSugarLevels(); renderItemRows();
+      await saveOneSugarLevel(s); renderItemRows();
     });
   });
   document.querySelectorAll('.sgPrice').forEach(inp=>{
     inp.addEventListener('change', async e=>{
       const s = sugarLevels.find(x=>x.id===e.target.dataset.id);
       s.price = parseInt(e.target.value)||0;
-      await saveSugarLevels(); renderItemRows();
+      await saveOneSugarLevel(s); renderItemRows();
     });
   });
   document.querySelectorAll('#sugarSettings .rm-btn').forEach(btn=>{
@@ -1590,8 +1607,9 @@ function renderSugarSettings(){
   });
 }
 document.getElementById('btnAddSugar').addEventListener('click', async ()=>{
-  sugarLevels.push({id:'sl-'+Date.now(), name:'Level Baru', price:0});
-  await saveSugarLevels(); renderSugarSettings();
+  const newSugar = {id:'sl-'+Date.now(), name:'Level Baru', price:0};
+  sugarLevels.push(newSugar);
+  await saveOneSugarLevel(newSugar); renderSugarSettings();
 });
 
 function renderShopInfoForm(){
@@ -1628,14 +1646,14 @@ function renderChannelSettings(){
     inp.addEventListener('change', async e=>{
       const c = channels.find(x=>x.id===e.target.dataset.id);
       c.name = e.target.value.trim();
-      await saveChannels(); refreshFormOptions();
+      await saveOneChannel(c); refreshFormOptions();
     });
   });
   document.querySelectorAll('.cType').forEach(sel=>{
     sel.addEventListener('change', async e=>{
       const c = channels.find(x=>x.id===e.target.dataset.id);
       c.type = e.target.value;
-      await saveChannels(); refreshFormOptions();
+      await saveOneChannel(c); refreshFormOptions();
     });
   });
   document.querySelectorAll('#channelSettings .rm-btn').forEach(btn=>{
@@ -1648,8 +1666,9 @@ function renderChannelSettings(){
   });
 }
 document.getElementById('btnAddChannel').addEventListener('click', async ()=>{
-  channels.push({id:'ch-'+Date.now(), name:'Channel Baru', type:'Direct'});
-  await saveChannels(); renderChannelSettings();
+  const newChannel = {id:'ch-'+Date.now(), name:'Channel Baru', type:'Direct'};
+  channels.push(newChannel);
+  await saveOneChannel(newChannel); renderChannelSettings();
 });
 
 /* ===================== STRUK / RECEIPT ===================== */
@@ -1704,10 +1723,10 @@ document.getElementById('btnPrintLastOrder').addEventListener('click', ()=>{
 /* ===================== INIT ===================== */
 (async function init(){
   await loadAll();
-  if(!products || products.length===0){ products = DEFAULT_PRODUCTS; await saveProducts(); }
-  if(!addons){ addons = DEFAULT_ADDONS; await saveAddons(); }
-  if(!channels || channels.length===0){ channels = DEFAULT_CHANNELS; await saveChannels(); }
-  if(!sugarLevels || sugarLevels.length===0){ sugarLevels = DEFAULT_SUGAR_LEVELS; await saveSugarLevels(); }
+  if(!products || products.length===0){ products = DEFAULT_PRODUCTS; await seedDefaults('products', products.map(toProductRow)); }
+  if(!addons){ addons = DEFAULT_ADDONS; await seedDefaults('addons', addons.map(toAddonRow)); }
+  if(!channels || channels.length===0){ channels = DEFAULT_CHANNELS; await seedDefaults('channels', channels.map(toChannelRow)); }
+  if(!sugarLevels || sugarLevels.length===0){ sugarLevels = DEFAULT_SUGAR_LEVELS; await seedDefaults('sugar_levels', sugarLevels.map(toSugarRow)); }
 
   renderDashboard();
   renderProductSettings();
