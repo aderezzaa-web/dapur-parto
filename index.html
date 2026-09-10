@@ -382,6 +382,11 @@
         </div>
 
         <div class="dp-list-card">
+          <div class="dp-list-header"><span>🚚</span> Deliver Tomorrow</div>
+          <div class="dp-list-body" id="dashDeliverTomorrow"></div>
+        </div>
+
+        <div class="dp-list-card">
           <div class="dp-list-header"><span>📋</span> Order Today</div>
           <div class="dp-list-body" id="dashOrderToday"></div>
         </div>
@@ -979,6 +984,13 @@ function renderDashboard(){
     const t = d ? d.toLocaleTimeString('id-ID',{hour:'2-digit',minute:'2-digit'}) : '-';
     return orderRowHtml(o, t);
   }).join('') : '<div class="dp-empty">Nggak ada pengantaran di rentang ini.</div>';
+
+  // Deliver Tomorrow — selalu besok beneran (tidak ikut filter dashboard)
+  document.getElementById('dashDeliverTomorrow').innerHTML = deliverTomorrow.length ? deliverTomorrow.map(o=>{
+    const d = o.deliverySchedule ? new Date(o.deliverySchedule) : null;
+    const t = d ? d.toLocaleTimeString('id-ID',{hour:'2-digit',minute:'2-digit'}) : '-';
+    return orderRowHtml(o, t);
+  }).join('') : '<div class="dp-empty">Nggak ada pengantaran besok.</div>';
 
   // Order (order yang DIBUAT di rentang dipilih, apapun jadwal antarnya)
   document.getElementById('dashOrderToday').innerHTML = placedInRange.length ? placedInRange.map(o=>{
