@@ -1,0 +1,20 @@
+{
+  "appId": "com.pingingo.dapurparto",
+  "appName": "Dapur Parto",
+  "webDir": "www",
+  "android": {
+    "backgroundColor": "#F2E3CE"
+  },
+  "plugins": {
+    "SplashScreen": {
+      "launchAutoHide": false,
+      "backgroundColor": "#F2E3CE",
+      "androidScaleType": "CENTER_CROP",
+      "showSpinner": false
+    },
+    "StatusBar": {
+      "style": "LIGHT",
+      "overlaysWebView": true
+    }
+  }
+}

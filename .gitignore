@@ -1,0 +1,5 @@
+node_modules/
+www/
+.taste-skill/
+*.keystore
+keystore-password.txt
