@@ -23,6 +23,7 @@ jobs:
           distribution: temurin
           java-version: 21
 
+      # Runner GitHub sudah punya Android SDK; cukup terima lisensinya.
       - name: Android SDK licenses
         run: yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --licenses > /dev/null || true
 
@@ -36,13 +37,15 @@ jobs:
         if: env.HAS_KEYSTORE == 'true'
         env:
           KS: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
-        run: echo "$KS" | base64 -d > android/app/release.keystore
+        run: printf '%s' "$KS" | tr -d ' \r\n' | base64 -d > android/app/release.keystore
 
       - name: Build APK
         working-directory: android
         env:
           KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
         run: |
+          # buang spasi/enter yang tidak sengaja ikut ter-copy ke secret
+          export KEYSTORE_PASSWORD="$(printf '%s' "$KEYSTORE_PASSWORD" | tr -d ' \r\n')"
           chmod +x gradlew
           if [ -f app/release.keystore ]; then
             ./gradlew assembleRelease
