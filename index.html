@@ -28,6 +28,7 @@
     --negative:#C4242A; --pill-negative-bg:#FFEDEA; --pill-negative-ink:#831C1E;
     --pill-warning-bg:#FFF7E6; --pill-warning-ink:#8A4B0B;
     --pill-neutral-bg:#ECEEE8; --pill-neutral-ink:#3B4036;
+    --pill-new-bg:#E3EEFF; --pill-new-ink:#123A73;
 
     --radius-card:8px; --radius-control:6px; --radius-chip:999px;
     --font:'Geist', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
@@ -325,6 +326,7 @@
     width:auto !important;height:30px !important;border-radius:999px !important;font-size:13px !important;font-weight:500;
     padding:0 28px 0 12px !important;border:none !important;background-position:right 8px center !important;
   }
+  .status-select.s-Baru{background-color:var(--pill-new-bg);color:var(--pill-new-ink);}
   .status-select.s-Confirmed{background-color:var(--pill-neutral-bg);color:var(--pill-neutral-ink);}
   .status-select.s-Paid{background-color:var(--pill-warning-bg);color:var(--pill-warning-ink);}
   .status-select.s-Delivered{background-color:var(--pill-positive-bg);color:var(--pill-positive-ink);}
@@ -332,6 +334,7 @@
   .badge{display:inline-flex;align-items:center;height:20px;padding:0 8px;border-radius:999px;font-size:12px;font-weight:500;white-space:nowrap;vertical-align:1px;}
   .badge-direct{background:var(--pill-neutral-bg);color:var(--pill-neutral-ink);}
   .badge-reseller{background:var(--brand-soft);color:var(--brand-ink);}
+  .badge-baru{background:var(--pill-new-bg);color:var(--pill-new-ink);}
   .badge-confirmed{background:var(--pill-neutral-bg);color:var(--pill-neutral-ink);}
   .badge-paid{background:var(--pill-warning-bg);color:var(--pill-warning-ink);}
   .badge-delivered{background:var(--pill-positive-bg);color:var(--pill-positive-ink);}
@@ -586,6 +589,7 @@
         <div>
           <label for="fStatus">Status</label>
           <select id="fStatus">
+            <option value="Baru">Baru</option>
             <option value="Confirmed">Confirmed</option>
             <option value="Paid">Paid</option>
             <option value="Delivered">Delivered</option>
@@ -671,6 +675,7 @@
     <div class="filter-bar">
       <select id="lStatus" aria-label="Status">
         <option value="all">Semua status</option>
+        <option value="Baru">Baru (dari web)</option>
         <option value="Confirmed">Confirmed</option>
         <option value="Paid">Paid</option>
         <option value="Delivered">Delivered</option>
@@ -1166,7 +1171,7 @@ function renderDashboard(){
     const prodLines = o.items.map(it=>`${it.qty}× ${esc(it.name)}`).join(', ');
     if(wide) return `
       <div class="dp-order-row nocol">
-        <span class="oname">${esc(o.customerName)}</span>
+        <span class="oname">${esc(o.customerName)}${o.status==='Baru' ? ' <span class="badge badge-baru">Baru</span>' : ''}</span>
         <span class="oprice">${rupiah(o.total)}</span>
         <span class="oprod"><span class="when">${esc(timeLabel)}</span> · ${prodLines}</span>
       </div>`;
@@ -1551,7 +1556,7 @@ document.getElementById('btnResetForm').addEventListener('click', resetForm);
 
 /* ===================== LIST ORDER ===================== */
 function statusBadge(s){
-  const cls = {Confirmed:'badge-confirmed',Paid:'badge-paid',Delivered:'badge-delivered'}[s]||'';
+  const cls = {Baru:'badge-baru',Confirmed:'badge-confirmed',Paid:'badge-paid',Delivered:'badge-delivered'}[s]||'';
   return `<span class="badge ${cls}">${s}</span>`;
 }
 function channelBadge(type){
@@ -1607,6 +1612,7 @@ function renderList(){
         ${o.notes ? `<div class="note">${esc(o.notes)}</div>` : ''}
         <div class="r3">
           <select class="status-select s-${o.status}" data-id="${o.id}" aria-label="Status">
+            <option value="Baru" ${o.status==='Baru'?'selected':''}>Baru</option>
             <option value="Confirmed" ${o.status==='Confirmed'?'selected':''}>Confirmed</option>
             <option value="Paid" ${o.status==='Paid'?'selected':''}>Paid</option>
             <option value="Delivered" ${o.status==='Delivered'?'selected':''}>Delivered</option>
@@ -2071,8 +2077,31 @@ async function startApp(){
   renderList();
   setStockJenis('in');
   renderStock();
+  startOrderRefresh();
 }
 window.startApp = startApp;
+
+/* Order dari web app pembeli masuk ke database tanpa lewat app ini.
+   Ambil ulang daftar order saat app dibuka lagi dan tiap 60 detik,
+   lalu kabari kalau ada order web baru. */
+let orderRefreshStarted = false;
+async function refreshOrders(){
+  if(document.hidden) return;
+  const before = new Set(orders.map(o=>o.id));
+  const { data, error } = await sb.from('orders').select('*').order('order_date', {ascending:false});
+  if(error || !data) return;
+  orders = data.map(fromOrderRow);
+  const fresh = orders.filter(o=>!before.has(o.id) && o.status==='Baru');
+  renderDashboard();
+  renderList();
+  if(fresh.length) showToast(fresh.length===1 ? 'Order web baru dari '+fresh[0].customerName : fresh.length+' order web baru masuk');
+}
+function startOrderRefresh(){
+  if(orderRefreshStarted) return;
+  orderRefreshStarted = true;
+  setInterval(refreshOrders, 60000);
+  document.addEventListener('visibilitychange', ()=>{ if(!document.hidden) refreshOrders(); });
+}
 </script>
 <script src="app-native.js"></script>
 <script src="auth.js"></script>
